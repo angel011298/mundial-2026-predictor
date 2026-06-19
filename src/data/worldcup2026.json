@@ -1,0 +1,129 @@
+{
+  "tournament": {
+    "id": "fifa-world-cup-2026",
+    "name": "Copa del Mundo FIFA 2026",
+    "hosts": ["Estados Unidos", "Canadá", "México"],
+    "startDate": "2026-06-11",
+    "endDate": "2026-07-19",
+    "openingVenue": "Estadio Azteca, Ciudad de México",
+    "finalVenue": "MetLife Stadium, Nueva York/Nueva Jersey",
+    "teamCount": 48,
+    "format": {
+      "groups": 12,
+      "teamsPerGroup": 4,
+      "advance": "Los 2 primeros de cada grupo + los 8 mejores terceros avanzan a Dieciseisavos (Ronda de 32).",
+      "knockoutRounds": ["Ronda de 32", "Octavos", "Cuartos", "Semifinales", "Final"]
+    },
+    "disclaimer": "Estructura y plantillas con fines ilustrativos. La fuente de verdad son los datos en vivo de la API. Edita este archivo para reflejar el sorteo oficial."
+  },
+  "groups": [
+    {
+      "id": "A",
+      "teams": [
+        { "name": "México", "code": "MEX", "flag": "🇲🇽", "rank": 14, "form": "WWDLW", "avgGF": 1.8, "avgGA": 0.8, "cleanSheets": 3 },
+        { "name": "Croacia", "code": "CRO", "flag": "🇭🇷", "rank": 10, "form": "WDWWL", "avgGF": 1.6, "avgGA": 1.0, "cleanSheets": 2 },
+        { "name": "Egipto", "code": "EGY", "flag": "🇪🇬", "rank": 33, "form": "WWWDL", "avgGF": 1.4, "avgGA": 0.9, "cleanSheets": 2 },
+        { "name": "Nueva Zelanda", "code": "NZL", "flag": "🇳🇿", "rank": 86, "form": "WLDLL", "avgGF": 0.9, "avgGA": 1.6, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "B",
+      "teams": [
+        { "name": "Canadá", "code": "CAN", "flag": "🇨🇦", "rank": 31, "form": "WDWLW", "avgGF": 1.5, "avgGA": 1.1, "cleanSheets": 2 },
+        { "name": "Marruecos", "code": "MAR", "flag": "🇲🇦", "rank": 12, "form": "WWWDW", "avgGF": 1.7, "avgGA": 0.6, "cleanSheets": 4 },
+        { "name": "Noruega", "code": "NOR", "flag": "🇳🇴", "rank": 28, "form": "WWLDW", "avgGF": 2.1, "avgGA": 1.2, "cleanSheets": 1 },
+        { "name": "Panamá", "code": "PAN", "flag": "🇵🇦", "rank": 41, "form": "DLWDL", "avgGF": 1.1, "avgGA": 1.3, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "C",
+      "teams": [
+        { "name": "España", "code": "ESP", "flag": "🇪🇸", "rank": 2, "form": "WWWWD", "avgGF": 2.4, "avgGA": 0.6, "cleanSheets": 4 },
+        { "name": "Uruguay", "code": "URU", "flag": "🇺🇾", "rank": 15, "form": "WDWLW", "avgGF": 1.6, "avgGA": 1.0, "cleanSheets": 2 },
+        { "name": "Japón", "code": "JPN", "flag": "🇯🇵", "rank": 17, "form": "WWWDW", "avgGF": 1.9, "avgGA": 0.7, "cleanSheets": 3 },
+        { "name": "Jordania", "code": "JOR", "flag": "🇯🇴", "rank": 64, "form": "DWLDL", "avgGF": 1.0, "avgGA": 1.4, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "D",
+      "teams": [
+        { "name": "Estados Unidos", "code": "USA", "flag": "🇺🇸", "rank": 16, "form": "WLWDW", "avgGF": 1.7, "avgGA": 1.0, "cleanSheets": 2 },
+        { "name": "Colombia", "code": "COL", "flag": "🇨🇴", "rank": 13, "form": "WWDWW", "avgGF": 1.8, "avgGA": 0.8, "cleanSheets": 3 },
+        { "name": "Australia", "code": "AUS", "flag": "🇦🇺", "rank": 24, "form": "WDLWD", "avgGF": 1.3, "avgGA": 1.1, "cleanSheets": 2 },
+        { "name": "Catar", "code": "QAT", "flag": "🇶🇦", "rank": 37, "form": "WLDLL", "avgGF": 1.1, "avgGA": 1.5, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "E",
+      "teams": [
+        { "name": "Argentina", "code": "ARG", "flag": "🇦🇷", "rank": 1, "form": "WWWDW", "avgGF": 2.3, "avgGA": 0.7, "cleanSheets": 4 },
+        { "name": "Suiza", "code": "SUI", "flag": "🇨🇭", "rank": 19, "form": "WDWDL", "avgGF": 1.4, "avgGA": 1.0, "cleanSheets": 2 },
+        { "name": "Nigeria", "code": "NGA", "flag": "🇳🇬", "rank": 39, "form": "WWLDW", "avgGF": 1.5, "avgGA": 1.1, "cleanSheets": 2 },
+        { "name": "Costa Rica", "code": "CRC", "flag": "🇨🇷", "rank": 47, "form": "DLWLL", "avgGF": 1.0, "avgGA": 1.4, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "F",
+      "teams": [
+        { "name": "Francia", "code": "FRA", "flag": "🇫🇷", "rank": 3, "form": "WWDWW", "avgGF": 2.2, "avgGA": 0.8, "cleanSheets": 3 },
+        { "name": "Senegal", "code": "SEN", "flag": "🇸🇳", "rank": 18, "form": "WWWDL", "avgGF": 1.6, "avgGA": 0.9, "cleanSheets": 3 },
+        { "name": "Austria", "code": "AUT", "flag": "🇦🇹", "rank": 22, "form": "WDWWL", "avgGF": 1.7, "avgGA": 1.1, "cleanSheets": 2 },
+        { "name": "Perú", "code": "PER", "flag": "🇵🇪", "rank": 49, "form": "DLDLW", "avgGF": 0.9, "avgGA": 1.2, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "G",
+      "teams": [
+        { "name": "Inglaterra", "code": "ENG", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "rank": 4, "form": "WWWWD", "avgGF": 2.1, "avgGA": 0.5, "cleanSheets": 5 },
+        { "name": "Dinamarca", "code": "DEN", "flag": "🇩🇰", "rank": 21, "form": "WDDWL", "avgGF": 1.5, "avgGA": 1.0, "cleanSheets": 2 },
+        { "name": "Serbia", "code": "SRB", "flag": "🇷🇸", "rank": 29, "form": "WLWDW", "avgGF": 1.6, "avgGA": 1.2, "cleanSheets": 1 },
+        { "name": "Chile", "code": "CHI", "flag": "🇨🇱", "rank": 44, "form": "LDLWL", "avgGF": 1.0, "avgGA": 1.3, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "H",
+      "teams": [
+        { "name": "Brasil", "code": "BRA", "flag": "🇧🇷", "rank": 5, "form": "WWDWW", "avgGF": 2.2, "avgGA": 0.7, "cleanSheets": 3 },
+        { "name": "Corea del Sur", "code": "KOR", "flag": "🇰🇷", "rank": 23, "form": "WWDLW", "avgGF": 1.5, "avgGA": 1.0, "cleanSheets": 2 },
+        { "name": "Camerún", "code": "CMR", "flag": "🇨🇲", "rank": 42, "form": "WLDWL", "avgGF": 1.3, "avgGA": 1.2, "cleanSheets": 1 },
+        { "name": "Grecia", "code": "GRE", "flag": "🇬🇷", "rank": 48, "form": "DWLDL", "avgGF": 1.1, "avgGA": 1.1, "cleanSheets": 2 }
+      ]
+    },
+    {
+      "id": "I",
+      "teams": [
+        { "name": "Portugal", "code": "POR", "flag": "🇵🇹", "rank": 6, "form": "WWWDW", "avgGF": 2.3, "avgGA": 0.8, "cleanSheets": 3 },
+        { "name": "Irán", "code": "IRN", "flag": "🇮🇷", "rank": 20, "form": "WWWDD", "avgGF": 1.4, "avgGA": 0.6, "cleanSheets": 4 },
+        { "name": "Ghana", "code": "GHA", "flag": "🇬🇭", "rank": 40, "form": "WLWDL", "avgGF": 1.4, "avgGA": 1.3, "cleanSheets": 1 },
+        { "name": "Ucrania", "code": "UKR", "flag": "🇺🇦", "rank": 26, "form": "WDLWD", "avgGF": 1.3, "avgGA": 1.0, "cleanSheets": 2 }
+      ]
+    },
+    {
+      "id": "J",
+      "teams": [
+        { "name": "Países Bajos", "code": "NED", "flag": "🇳🇱", "rank": 7, "form": "WWDWW", "avgGF": 2.0, "avgGA": 0.8, "cleanSheets": 3 },
+        { "name": "Ecuador", "code": "ECU", "flag": "🇪🇨", "rank": 25, "form": "WDWWD", "avgGF": 1.4, "avgGA": 0.7, "cleanSheets": 3 },
+        { "name": "Argelia", "code": "ALG", "flag": "🇩🇿", "rank": 38, "form": "WWLDW", "avgGF": 1.6, "avgGA": 1.1, "cleanSheets": 2 },
+        { "name": "Polonia", "code": "POL", "flag": "🇵🇱", "rank": 34, "form": "LDWLW", "avgGF": 1.3, "avgGA": 1.2, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "K",
+      "teams": [
+        { "name": "Bélgica", "code": "BEL", "flag": "🇧🇪", "rank": 8, "form": "WWDWD", "avgGF": 2.0, "avgGA": 0.9, "cleanSheets": 2 },
+        { "name": "Italia", "code": "ITA", "flag": "🇮🇹", "rank": 9, "form": "WDWWW", "avgGF": 1.8, "avgGA": 0.7, "cleanSheets": 3 },
+        { "name": "Costa de Marfil", "code": "CIV", "flag": "🇨🇮", "rank": 43, "form": "WWLDW", "avgGF": 1.5, "avgGA": 1.1, "cleanSheets": 2 },
+        { "name": "Turquía", "code": "TUR", "flag": "🇹🇷", "rank": 27, "form": "WDLWL", "avgGF": 1.6, "avgGA": 1.2, "cleanSheets": 1 }
+      ]
+    },
+    {
+      "id": "L",
+      "teams": [
+        { "name": "Alemania", "code": "GER", "flag": "🇩🇪", "rank": 11, "form": "WWWDL", "avgGF": 2.1, "avgGA": 0.9, "cleanSheets": 2 },
+        { "name": "Túnez", "code": "TUN", "flag": "🇹🇳", "rank": 45, "form": "DWDLL", "avgGF": 1.0, "avgGA": 1.1, "cleanSheets": 2 },
+        { "name": "Arabia Saudita", "code": "KSA", "flag": "🇸🇦", "rank": 56, "form": "LDWLL", "avgGF": 0.9, "avgGA": 1.4, "cleanSheets": 1 },
+        { "name": "Paraguay", "code": "PAR", "flag": "🇵🇾", "rank": 46, "form": "DDWLD", "avgGF": 1.1, "avgGA": 1.0, "cleanSheets": 2 }
+      ]
+    }
+  ]
+}

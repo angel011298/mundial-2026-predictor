@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #09090b; /* zinc-950 */
+  color: #e4e4e7; /* zinc-200 */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Respeta los notches en móviles (viewport-fit=cover) */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Scrollbar discreta, estilo dashboard premium */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a; /* zinc-800 */
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46; /* zinc-700 */
+}
+
+/* Capa de utilidades reutilizables */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-zinc-800/80 bg-zinc-900/60 backdrop-blur-sm;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+}
+
+/* Reduce el movimiento si el usuario lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
