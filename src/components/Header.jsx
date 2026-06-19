@@ -2,7 +2,7 @@ import { Trophy } from 'lucide-react';
 import RefreshButton from './RefreshButton.jsx';
 
 /** Cabecera fija (sticky) con identidad del torneo y botón de actualización. */
-export default function Header({ tournament, ...refreshProps }) {
+export default function Header({ tournament, countdown, hasLive, ...refreshProps }) {
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-lg">
       <div className="mx-auto w-full max-w-md px-4 pb-3 pt-4">
@@ -19,7 +19,7 @@ export default function Header({ tournament, ...refreshProps }) {
             </p>
           </div>
         </div>
-        <RefreshButton {...refreshProps} />
+        <RefreshButton {...refreshProps} countdown={countdown} hasLive={hasLive} />
       </div>
     </header>
   );

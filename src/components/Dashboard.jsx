@@ -1,10 +1,15 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Activity, Radio, CalendarClock, AlertTriangle } from 'lucide-react';
 import worldcup from '../data/worldcup2026.json';
 import { getLiveMatches, getProviderInfo } from '../services/sportsApiService.js';
 import Header from './Header.jsx';
 import GroupFilter from './GroupFilter.jsx';
 import MatchCard from './MatchCard.jsx';
+
+// Intervalo de auto-refresh según actividad:
+// 45s con partidos en vivo, 90s sin partidos activos.
+const INTERVAL_LIVE = 45;
+const INTERVAL_IDLE = 90;
 
 /** Tarjeta compacta de métrica para la fila de resumen. */
 function StatCard({ icon: Icon, label, value, tone }) {
@@ -18,18 +23,21 @@ function StatCard({ icon: Icon, label, value, tone }) {
 }
 
 export default function Dashboard() {
-  const [matches, setMatches] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastSync, setLastSync] = useState(null);
-  const [error, setError] = useState(null);
+  const [matches, setMatches]       = useState([]);
+  const [isLoading, setIsLoading]   = useState(true);
+  const [lastSync, setLastSync]     = useState(null);
+  const [error, setError]           = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [groupFilter, setGroupFilter] = useState('all');
+  const [groupFilter, setGroupFilter]   = useState('all');
+  const [countdown, setCountdown]   = useState(null); // segundos al próximo auto-refresh
 
-  const providerInfo = useMemo(() => getProviderInfo(), []);
+  const providerInfo  = useMemo(() => getProviderInfo(), []);
+  const autoTimerRef  = useRef(null);
+  const countdownRef  = useRef(null);
 
-  // Carga / actualización de datos (botón ACTUALIZAR EN TIEMPO REAL).
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
+  // ── Fetch principal ──────────────────────────────────────────────
+  const refresh = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const data = await getLiveMatches();
@@ -43,35 +51,57 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Carga inicial al montar.
-  useEffect(() => {
-    refresh();
+  // ── Auto-refresh inteligente ─────────────────────────────────────
+  const scheduleAutoRefresh = useCallback((hasLive) => {
+    // Limpia ciclos anteriores
+    clearTimeout(autoTimerRef.current);
+    clearInterval(countdownRef.current);
+
+    const interval = hasLive ? INTERVAL_LIVE : INTERVAL_IDLE;
+    let remaining  = interval;
+    setCountdown(remaining);
+
+    // Cuenta regresiva visible cada segundo
+    countdownRef.current = setInterval(() => {
+      remaining -= 1;
+      setCountdown(remaining);
+      if (remaining <= 0) clearInterval(countdownRef.current);
+    }, 1000);
+
+    // Dispara el refresh al terminar el intervalo
+    autoTimerRef.current = setTimeout(async () => {
+      await refresh(true); // silent = no muestra spinner
+    }, interval * 1000);
   }, [refresh]);
 
-  // "tick" para refrescar las etiquetas relativas ("hace X min").
-  const [, setTick] = useState(0);
+  // Cada vez que llegan nuevos datos, reprograma el auto-refresh
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 30000);
-    return () => clearInterval(id);
-  }, []);
+    if (lastSync === null) return;
+    const hasLive = matches.some((m) => m.status === 'live');
+    scheduleAutoRefresh(hasLive);
+    return () => {
+      clearTimeout(autoTimerRef.current);
+      clearInterval(countdownRef.current);
+    };
+  }, [lastSync, matches, scheduleAutoRefresh]);
 
-  // Filtrado en memoria.
-  const filtered = useMemo(() => {
-    return matches.filter((m) => {
-      const okStatus = statusFilter === 'all' || m.status === statusFilter;
-      const okGroup = groupFilter === 'all' || m.group === groupFilter;
-      return okStatus && okGroup;
-    });
-  }, [matches, statusFilter, groupFilter]);
+  // Carga inicial
+  useEffect(() => { refresh(); }, [refresh]);
 
-  const counts = useMemo(
-    () => ({
-      live: matches.filter((m) => m.status === 'live').length,
-      upcoming: matches.filter((m) => m.status === 'upcoming').length,
-      total: matches.length,
-    }),
-    [matches]
-  );
+  // ── Filtrado en memoria ──────────────────────────────────────────
+  const filtered = useMemo(() => matches.filter((m) => {
+    const okStatus = statusFilter === 'all' || m.status === statusFilter;
+    const okGroup  = groupFilter  === 'all' || m.group  === groupFilter;
+    return okStatus && okGroup;
+  }), [matches, statusFilter, groupFilter]);
+
+  const counts = useMemo(() => ({
+    live:     matches.filter((m) => m.status === 'live').length,
+    upcoming: matches.filter((m) => m.status === 'upcoming').length,
+    total:    matches.length,
+  }), [matches]);
+
+  const hasLiveNow = counts.live > 0;
 
   return (
     <div className="min-h-full">
@@ -81,6 +111,8 @@ export default function Dashboard() {
         isLoading={isLoading}
         lastSync={lastSync}
         providerLabel={providerInfo.label}
+        countdown={countdown}
+        hasLive={hasLiveNow}
       />
 
       <main className="mx-auto w-full max-w-md px-4 pb-28 pt-4">
