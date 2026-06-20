@@ -39,6 +39,7 @@ const ESPN_NAME_MAP = {
   'Morocco': 'Marruecos',
   'Ivory Coast': 'Costa de Marfil',
   "Cote d'Ivoire": 'Costa de Marfil',
+  "Côte d'Ivoire": 'Costa de Marfil',
   'Costa Rica': 'Costa Rica',
   'New Zealand': 'Nueva Zelanda',
   'Canada': 'Canadá',
@@ -59,6 +60,7 @@ const ESPN_NAME_MAP = {
   'Brazil': 'Brasil',
   'South Korea': 'Corea del Sur',
   'Korea Republic': 'Corea del Sur',
+  'Korea DPR': 'Corea del Norte',
   'Cameroon': 'Camerún',
   'Greece': 'Grecia',
   'Portugal': 'Portugal',
@@ -70,6 +72,7 @@ const ESPN_NAME_MAP = {
   'Poland': 'Polonia',
   'Italy': 'Italia',
   'Turkey': 'Turquía',
+  'Türkiye': 'Turquía',
   'Tunisia': 'Túnez',
   'Saudi Arabia': 'Arabia Saudita',
   'Paraguay': 'Paraguay',
@@ -78,6 +81,33 @@ const ESPN_NAME_MAP = {
   'Austria': 'Austria',
   'Peru': 'Perú',
   'Panama': 'Panamá',
+  // Equipos del Mundial 2026 confirmados por ESPN
+  'Czechia': 'República Checa',
+  'Czech Republic': 'República Checa',
+  'South Africa': 'Sudáfrica',
+  'Bosnia and Herzegovina': 'Bosnia y Herzegovina',
+  'Bosnia-Herzegovina': 'Bosnia y Herzegovina',
+  'Bosnia & Herzegovina': 'Bosnia y Herzegovina',
+  'Egypt': 'Egipto',
+  'New Zealand': 'Nueva Zelanda',
+  'Venezuela': 'Venezuela',
+  'Bolivia': 'Bolivia',
+  'Honduras': 'Honduras',
+  'El Salvador': 'El Salvador',
+  'Jamaica': 'Jamaica',
+  'Trinidad and Tobago': 'Trinidad y Tobago',
+  'Mali': 'Malí',
+  'Burkina Faso': 'Burkina Faso',
+  'Morocco': 'Marruecos',
+  'Tanzania': 'Tanzania',
+  'Mozambique': 'Mozambique',
+  'Zambia': 'Zambia',
+  'Zimbabwe': 'Zimbabue',
+  'United Arab Emirates': 'Emiratos Árabes Unidos',
+  'Iraq': 'Irak',
+  'Uzbekistan': 'Uzbekistán',
+  'Indonesia': 'Indonesia',
+  'Thailand': 'Tailandia',
 };
 
 // ─── Utilidades internas ──────────────────────────────────────────
@@ -144,6 +174,22 @@ async function fetchFromESPN() {
   return events.map(normalizeESPNEvent).filter(Boolean);
 }
 
+/** Extrae la letra del grupo de la respuesta ESPN (notas, nombre, shortName…) */
+function extractGroupFromESPN(ev, comp) {
+  // ESPN a veces incluye el grupo en las notas del partido
+  const notes = comp?.notes ?? [];
+  for (const note of notes) {
+    const m = (note.headline ?? note.text ?? '').match(/Group\s+([A-L])/i);
+    if (m) return m[1].toUpperCase();
+  }
+  // O en el nombre del evento / liga
+  for (const src of [ev.name, ev.shortName, ev.league?.name, ev.season?.description]) {
+    const m = (src ?? '').match(/Group\s+([A-L])/i);
+    if (m) return m[1].toUpperCase();
+  }
+  return null;
+}
+
 /** Convierte un evento ESPN → esquema Match normalizado */
 function normalizeESPNEvent(ev) {
   const comp = ev.competitions?.[0];
@@ -154,13 +200,16 @@ function normalizeESPNEvent(ev) {
   if (!homeC || !awayC) return null;
 
   const statusName = comp.status?.type?.name ?? '';
+  const statusId   = comp.status?.type?.id   ?? '';
   const status =
-    statusName === 'STATUS_IN_PROGRESS' ? 'live'
-    : ['STATUS_FINAL', 'STATUS_FULL_TIME', 'STATUS_FINAL_AET', 'STATUS_FINAL_PEN'].includes(statusName) ? 'finished'
+    statusName === 'STATUS_IN_PROGRESS' || statusId === '2' ? 'live'
+    : ['STATUS_FINAL', 'STATUS_FULL_TIME', 'STATUS_FINAL_AET', 'STATUS_FINAL_PEN'].includes(statusName)
+      || statusId === '28' ? 'finished'
+    // Fallback: si la fecha ya pasó hace más de 2h, considerarlo finalizado
+    : new Date(ev.date) < new Date(Date.now() - 120 * 60_000) ? 'finished'
     : 'upcoming';
 
-  // Minuto en vivo (ESPN entrega el reloj como string "45'")
-  const clock = comp.status?.displayClock ?? '';
+  const clock  = comp.status?.displayClock ?? '';
   const minute = status === 'live' ? parseInt(clock) || null : null;
 
   const homeTeam = resolveTeam(homeC.team?.displayName ?? homeC.team?.name ?? '');
@@ -169,9 +218,13 @@ function normalizeESPNEvent(ev) {
   const homeScore = status !== 'upcoming' ? (parseInt(homeC.score) ?? null) : null;
   const awayScore = status !== 'upcoming' ? (parseInt(awayC.score) ?? null) : null;
 
+  // Grupo: primero lo que ESPN dice, luego el del JSON local
+  const espnGroup = extractGroupFromESPN(ev, comp);
+  const group = espnGroup ?? homeTeam.group ?? '—';
+
   return {
     id: String(ev.id),
-    group: homeTeam.group || '—',
+    group,
     status,
     minute,
     kickoff: ev.date,
@@ -179,7 +232,7 @@ function normalizeESPNEvent(ev) {
     away: { ...awayTeam, score: awayScore },
     odds: buildOdds(homeTeam, awayTeam),
     volatility: 0,
-    dataSource: 'espn', // marcador para la UI
+    dataSource: 'espn',
   };
 }
 

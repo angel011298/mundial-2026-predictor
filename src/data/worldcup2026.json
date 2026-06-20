@@ -21,9 +21,9 @@
       "id": "A",
       "teams": [
         { "name": "México", "code": "MEX", "flag": "🇲🇽", "rank": 14, "form": "WWDLW", "avgGF": 1.8, "avgGA": 0.8, "cleanSheets": 3 },
-        { "name": "Croacia", "code": "CRO", "flag": "🇭🇷", "rank": 10, "form": "WDWWL", "avgGF": 1.6, "avgGA": 1.0, "cleanSheets": 2 },
-        { "name": "Egipto", "code": "EGY", "flag": "🇪🇬", "rank": 33, "form": "WWWDL", "avgGF": 1.4, "avgGA": 0.9, "cleanSheets": 2 },
-        { "name": "Nueva Zelanda", "code": "NZL", "flag": "🇳🇿", "rank": 86, "form": "WLDLL", "avgGF": 0.9, "avgGA": 1.6, "cleanSheets": 1 }
+        { "name": "Corea del Sur", "code": "KOR", "flag": "🇰🇷", "rank": 23, "form": "WWDLW", "avgGF": 1.5, "avgGA": 1.0, "cleanSheets": 2 },
+        { "name": "República Checa", "code": "CZE", "flag": "🇨🇿", "rank": 37, "form": "WDWLL", "avgGF": 1.4, "avgGA": 1.0, "cleanSheets": 2 },
+        { "name": "Sudáfrica", "code": "RSA", "flag": "🇿🇦", "rank": 63, "form": "WDLLD", "avgGF": 1.0, "avgGA": 1.2, "cleanSheets": 1 }
       ]
     },
     {
@@ -59,7 +59,7 @@
         { "name": "Argentina", "code": "ARG", "flag": "🇦🇷", "rank": 1, "form": "WWWDW", "avgGF": 2.3, "avgGA": 0.7, "cleanSheets": 4 },
         { "name": "Suiza", "code": "SUI", "flag": "🇨🇭", "rank": 19, "form": "WDWDL", "avgGF": 1.4, "avgGA": 1.0, "cleanSheets": 2 },
         { "name": "Nigeria", "code": "NGA", "flag": "🇳🇬", "rank": 39, "form": "WWLDW", "avgGF": 1.5, "avgGA": 1.1, "cleanSheets": 2 },
-        { "name": "Costa Rica", "code": "CRC", "flag": "🇨🇷", "rank": 47, "form": "DLWLL", "avgGF": 1.0, "avgGA": 1.4, "cleanSheets": 1 }
+        { "name": "Bosnia y Herzegovina", "code": "BIH", "flag": "🇧🇦", "rank": 53, "form": "WDWDL", "avgGF": 1.3, "avgGA": 1.1, "cleanSheets": 2 }
       ]
     },
     {
@@ -84,9 +84,9 @@
       "id": "H",
       "teams": [
         { "name": "Brasil", "code": "BRA", "flag": "🇧🇷", "rank": 5, "form": "WWDWW", "avgGF": 2.2, "avgGA": 0.7, "cleanSheets": 3 },
-        { "name": "Corea del Sur", "code": "KOR", "flag": "🇰🇷", "rank": 23, "form": "WWDLW", "avgGF": 1.5, "avgGA": 1.0, "cleanSheets": 2 },
         { "name": "Camerún", "code": "CMR", "flag": "🇨🇲", "rank": 42, "form": "WLDWL", "avgGF": 1.3, "avgGA": 1.2, "cleanSheets": 1 },
-        { "name": "Grecia", "code": "GRE", "flag": "🇬🇷", "rank": 48, "form": "DWLDL", "avgGF": 1.1, "avgGA": 1.1, "cleanSheets": 2 }
+        { "name": "Grecia", "code": "GRE", "flag": "🇬🇷", "rank": 48, "form": "DWLDL", "avgGF": 1.1, "avgGA": 1.1, "cleanSheets": 2 },
+        { "name": "Costa Rica", "code": "CRC", "flag": "🇨🇷", "rank": 47, "form": "DLWLL", "avgGF": 1.0, "avgGA": 1.4, "cleanSheets": 1 }
       ]
     },
     {
