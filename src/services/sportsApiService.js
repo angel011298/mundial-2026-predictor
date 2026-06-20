@@ -329,25 +329,79 @@ function generateMockMatches() {
   });
 }
 
+// ─── Calendario estático de fixtures ─────────────────────────────
+
+/**
+ * Convierte el array worldcup.schedule → partidos con status "upcoming".
+ * Sirve como fallback para días futuros que ESPN no devuelve.
+ */
+function getStaticSchedule() {
+  return (worldcup.schedule ?? []).map((fx) => {
+    const homeTeam = resolveTeam(fx.home);
+    const awayTeam = resolveTeam(fx.away);
+    return {
+      id: fx.id,
+      group: fx.group,
+      status: 'upcoming',
+      minute: null,
+      kickoff: fx.date,
+      home: { ...homeTeam, score: null },
+      away: { ...awayTeam, score: null },
+      odds: buildOdds(homeTeam, awayTeam),
+      volatility: 0,
+      dataSource: 'schedule',
+    };
+  });
+}
+
+/** Construye una clave normalizada para deduplicar partidos (indep. de homeAway). */
+function pairKey(codeA, codeB) {
+  return [codeA, codeB].sort().join('-');
+}
+
 // ─── Interfaz pública ─────────────────────────────────────────────
 
 /**
  * Obtiene partidos del Mundial 2026 normalizados.
- * Si el proveedor elegido falla, cae automáticamente a datos demo.
+ * ESPN cubre hoy en tiempo real; el calendario estático añade los fixtures
+ * futuros que ESPN aún no devuelve (solo retorna el día actual).
  */
 export async function getLiveMatches() {
   const demoDelay = (data) =>
     new Promise((r) => setTimeout(() => r(data), 650));
 
+  let livematches = [];
+
   try {
-    if (PROVIDER === 'espn')          return await fetchFromESPN();
-    if (PROVIDER === 'odds-api')      return await fetchFromOddsApi();
-    if (PROVIDER === 'api-football')  return await fetchFromApiFootball();
-    return await demoDelay(generateMockMatches());
+    if (PROVIDER === 'espn')          livematches = await fetchFromESPN();
+    else if (PROVIDER === 'odds-api') livematches = await fetchFromOddsApi();
+    else if (PROVIDER === 'api-football') livematches = await fetchFromApiFootball();
+    else livematches = await demoDelay(generateMockMatches());
   } catch (err) {
     console.warn(`[sportsApiService] "${PROVIDER}" falló (${err.message}) → usando datos DEMO.`);
-    return await demoDelay(generateMockMatches());
+    livematches = generateMockMatches();
   }
+
+  // Fusionar con calendario estático: añadir solo fixtures no cubiertos por ESPN
+  const staticSchedule = getStaticSchedule();
+  const coveredPairs = new Set(
+    livematches.map((m) => pairKey(m.home.code, m.away.code))
+  );
+  const futureFixtures = staticSchedule.filter(
+    (m) => !coveredPairs.has(pairKey(m.home.code, m.away.code))
+      && new Date(m.kickoff) > new Date(Date.now() - 2 * 3600_000) // >2h en el futuro
+  );
+
+  // Ordenar todo cronológicamente: en vivo primero, luego próximos, luego finalizados
+  const all = [...livematches, ...futureFixtures];
+  const order = { live: 0, upcoming: 1, finished: 2 };
+  all.sort((a, b) => {
+    const statusDiff = (order[a.status] ?? 1) - (order[b.status] ?? 1);
+    if (statusDiff !== 0) return statusDiff;
+    return new Date(a.kickoff) - new Date(b.kickoff);
+  });
+
+  return all;
 }
 
 export function getProviderInfo() {
