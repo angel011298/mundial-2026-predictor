@@ -6,6 +6,9 @@ import { useToast } from '../context/ToastContext.jsx';
 import Header from './Header.jsx';
 import GroupFilter from './GroupFilter.jsx';
 import MatchCard from './MatchCard.jsx';
+import ViewTabs from './ViewTabs.jsx';
+import Standings from './Standings.jsx';
+import Bracket from './Bracket.jsx';
 
 const INTERVAL_LIVE = 45;
 const INTERVAL_IDLE = 90;
@@ -37,6 +40,7 @@ export default function Dashboard() {
   const [lastSync, setLastSync] = useState(null);
   const [error, setError]       = useState(null);
   const [countdown, setCountdown] = useState(null);
+  const [activeView, setActiveView] = useState('matches');
 
   // ── Filters — initialized from URL ────────────────────────────────
   const [statusFilter, setStatusFilterState] = useState(
@@ -144,50 +148,87 @@ export default function Dashboard() {
       />
 
       <main className="mx-auto w-full max-w-md px-4 pb-28 pt-4" id="main-content">
-        {/* Resumen */}
-        <section className="mb-4 grid grid-cols-3 gap-2.5" aria-label="Resumen de partidos">
-          <StatCard icon={Radio}        label="En vivo"  value={counts.live}     tone="text-rose-400"    />
-          <StatCard icon={CalendarClock} label="Próximos" value={counts.upcoming} tone="text-violet-400" />
-          <StatCard icon={Activity}     label="Partidos" value={counts.total}    tone="text-emerald-400" />
-        </section>
+        {/* Tabs de navegación */}
+        <ViewTabs active={activeView} onChange={setActiveView} />
 
-        {/* Filtros */}
-        <section className="mb-4" aria-label="Filtros">
-          <GroupFilter
-            groups={worldcup.groups}
-            statusFilter={statusFilter}
-            onStatusChange={setStatusFilter}
-            groupFilter={groupFilter}
-            onGroupChange={setGroupFilter}
-          />
-        </section>
+        {/* Vista: Partidos */}
+        {activeView === 'matches' && (
+          <div id="panel-matches" role="tabpanel">
+            {/* Resumen */}
+            <section className="mb-4 grid grid-cols-3 gap-2.5" aria-label="Resumen de partidos">
+              <StatCard icon={Radio}        label="En vivo"  value={counts.live}     tone="text-rose-400"    />
+              <StatCard icon={CalendarClock} label="Próximos" value={counts.upcoming} tone="text-violet-400" />
+              <StatCard icon={Activity}     label="Partidos" value={counts.total}    tone="text-emerald-400" />
+            </section>
 
-        {/* Error */}
-        {error && (
-          <div
-            role="alert"
-            className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300"
-          >
-            <AlertTriangle size={16} aria-hidden="true" /> {error}
+            {/* Filtros */}
+            <section className="mb-4" aria-label="Filtros">
+              <GroupFilter
+                groups={worldcup.groups}
+                statusFilter={statusFilter}
+                onStatusChange={setStatusFilter}
+                groupFilter={groupFilter}
+                onGroupChange={setGroupFilter}
+              />
+            </section>
+
+            {/* Error */}
+            {error && (
+              <div
+                role="alert"
+                className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300"
+              >
+                <AlertTriangle size={16} aria-hidden="true" /> {error}
+              </div>
+            )}
+
+            {/* Lista de partidos */}
+            {isLoading && matches.length === 0 ? (
+              <SkeletonList />
+            ) : filtered.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <section
+                className="space-y-3"
+                aria-label={`${filtered.length} partido${filtered.length !== 1 ? 's' : ''}`}
+                aria-live="polite"
+                aria-busy={isLoading}
+              >
+                {filtered.map((m) => (
+                  <MatchCard key={m.id} match={m} />
+                ))}
+              </section>
+            )}
           </div>
         )}
 
-        {/* Lista de partidos */}
-        {isLoading && matches.length === 0 ? (
-          <SkeletonList />
-        ) : filtered.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <section
-            className="space-y-3"
-            aria-label={`${filtered.length} partido${filtered.length !== 1 ? 's' : ''}`}
-            aria-live="polite"
-            aria-busy={isLoading}
-          >
-            {filtered.map((m) => (
-              <MatchCard key={m.id} match={m} />
-            ))}
-          </section>
+        {/* Vista: Grupos / Posiciones */}
+        {activeView === 'standings' && (
+          <div id="panel-standings" role="tabpanel">
+            {isLoading && matches.length === 0 ? (
+              <SkeletonList />
+            ) : (
+              <Standings matches={matches} groups={worldcup.groups} />
+            )}
+          </div>
+        )}
+
+        {/* Vista: Bracket */}
+        {activeView === 'bracket' && (
+          <div id="panel-bracket" role="tabpanel">
+            <Bracket matches={matches} groups={worldcup.groups} />
+          </div>
+        )}
+
+        {/* Vista: Mis Picks (scorecard + bankroll — se añaden en features 3 & 4) */}
+        {activeView === 'picks' && (
+          <div id="panel-picks" role="tabpanel">
+            <div className="card p-8 text-center text-sm text-zinc-500">
+              <p className="text-2xl mb-2">📈</p>
+              <p className="font-semibold text-zinc-300">Mis Picks</p>
+              <p className="text-xs mt-1 text-zinc-600">El scorecard y bankroll tracker se añaden en el siguiente commit.</p>
+            </div>
+          </div>
         )}
       </main>
     </div>
