@@ -30,35 +30,35 @@ npm run preview    # sirve el build de producción
 
 Sin claves de API, la app arranca en **modo DEMO** con datos simulados realistas.
 
-## 🔌 Conectar APIs reales
+## 🔌 Fuentes de datos y APIs
 
-Copia `.env.example` a `.env` y elige proveedor:
+La capa de fusión (`src/services/dataFusion.js`) orquesta 7 fuentes en paralelo:
 
-| Variable | Descripción |
-|---|---|
-| `VITE_DATA_PROVIDER` | `mock` · `odds-api` · `api-football` |
-| `VITE_ODDS_API_KEY` | Clave de [The Odds API](https://the-odds-api.com/) (cuotas) |
-| `VITE_API_FOOTBALL_KEY` | Clave de [API-Football](https://www.api-football.com/) (marcadores/estadísticas) |
+| Fuente | Tipo | Edge Function | Variable de entorno | Cache |
+|---|---|---|---|---|
+| ESPN scoreboard | Gratuita | `/api/matches` | — | 30 s |
+| rezarahiminia/worldcup2026 | Gratuita | `/api/worldcup` | — | 6 h |
+| eloratings.net (estático) | Gratuita | `/api/elo` | — | 24 h |
+| API-Football v3 | 100 req/día | `/api/apifootball` | `API_FOOTBALL_KEY` | 2 h |
+| BALLDONTLIE | Con clave | `/api/balldontlie` | `BALLDONTLIE_API_KEY` | 2 h |
+| SportsGameOdds | Con clave | `/api/sportsgameodds` | `SPORTSGAMEODDS_API_KEY` | 3 h |
+| OddsPapi | 250 req/mes | `/api/oddspapi` | `ODDSPAPI_API_KEY` | **12 h** |
 
-Los adaptadores y la normalización viven en
-[`src/services/sportsApiService.js`](src/services/sportsApiService.js). Todos los
-proveedores devuelven el **mismo esquema `Match`**, así que la UI y el motor de
-consejos no cambian al cambiar de fuente.
+Sin ninguna clave la app funciona con ESPN + rezarahiminia + Elo estático y cuotas del modelo interno.
 
-### 🔐 Seguridad de claves (importante)
+Copia `.env.example` a `.env` y rellena sólo las claves que tengas.
 
-En una SPA estática, cualquier `VITE_*` queda **expuesta** en el bundle. Para
-producción real, no pongas la clave en el cliente: crea un **proxy Serverless**
-(Vercel Functions / Netlify Functions / Edge) que guarde la clave del lado del
-servidor y reenvíe la petición. La arquitectura ya está lista para apuntar el
-`fetch` del servicio a `/api/odds` en lugar de al proveedor directo.
+### 🔐 Seguridad de claves
+
+Las claves van en variables **sin prefijo `VITE_`** — solo se leen dentro de las
+Vercel Edge Functions (`/api/*.js`, lado servidor), nunca en el bundle del navegador.
 
 ## 🗂️ Estructura
 
 ```
 src/
 ├── data/worldcup2026.json     # Estructura del torneo: 48 equipos, 12 grupos A–L
-├── services/sportsApiService.js  # Acceso a datos (mock / odds-api / api-football)
+├── services/dataFusion.js         # Fusión de 7 fuentes → esquema Match extendido
 ├── utils/
 │   ├── adviceEngine.js        # Probabilidades, Kelly, riesgo, stat clave
 │   └── format.js              # Helpers de formato y tonos de color

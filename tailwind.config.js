@@ -34,11 +34,16 @@ export default {
           '0%': { transform: 'scaleX(0)' },
           '100%': { transform: 'scaleX(1)' },
         },
+        'toast-in': {
+          '0%': { opacity: '0', transform: 'translateY(-10px) scale(0.96)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
       },
       animation: {
         'pulse-ring': 'pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-up': 'fade-up 0.4s ease-out both',
         'bar-grow': 'bar-grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'toast-in': 'toast-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both',
       },
     },
   },

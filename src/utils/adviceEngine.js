@@ -4,14 +4,23 @@
  * Motor de Consejos Inteligente para el Mundial 2026.
  *
  * Convierte cuotas decimales + estadísticas de equipo en:
- *   1. Probabilidades de Victoria/Empate (distribución implícita normalizada).
+ *   1. Probabilidades de Victoria/Empate — blend de tres señales:
+ *      Dixon-Coles (Poisson), Elo y consenso de mercado des-vig.
  *   2. Nivel de Riesgo dinámico ("Bajo" | "Medio" | "Alto").
- *   3. Monto recomendado vía Criterio de Kelly fraccionario (gestión de bankroll).
+ *   3. Monto recomendado vía Criterio de Kelly fraccionario (¼ Kelly, tope 8%).
  *   4. Píldora de estadística clave generada dinámicamente.
+ *   5. Value bets y explicación del modelo (para el panel de justificación).
  *
  * NOTA RESPONSABLE: las recomendaciones son analíticas/educativas, no
  * garantías. Apuesta solo lo que puedas permitirte perder. +18.
  */
+
+import { dixonColesProbs } from '../model/dixonColes.js';
+import { eloProbability }  from '../model/elo.js';
+import { getMarketProbs }  from '../model/marketConsensus.js';
+import { blendProbabilities, DEFAULT_WEIGHTS } from '../model/blend.js';
+import { recommendedStake as kellyStake, kellyFraction as kellyFrac } from '../model/kelly.js';
+import { analyzeValue } from '../model/value.js';
 
 // ─── 1. Probabilidades implícitas (sin margen de la casa) ──────────
 
@@ -60,98 +69,94 @@ function teamRating(team) {
   return 0.65 * rankScore + 0.35 * form;
 }
 
-// ─── 3. Probabilidades del modelo (con edge sobre la casa) ─────────
+// ─── 3. Probabilidades del modelo (blend multi-señal) ──────────────
 
 /**
- * Estima probabilidades propias mezclando la distribución implícita
- * de la casa con un modelo basado en rating de equipos. El "blend"
- * permite que aparezca valor (edge) sin alejarse demasiado del mercado.
+ * Estima probabilidades propias combinando tres señales independientes:
+ *   1. Poisson bivariado Dixon-Coles (fuerza ofensiva/defensiva + forma)
+ *   2. Rating Elo (con ventaja de localía solo para USA/CAN/MEX)
+ *   3. Consenso de mercado des-vig (cuotas limpias de margen de la casa)
+ *
+ * Mantiene la misma firma para no romper ningún componente que la llame.
+ *
+ * @param {{ home, draw, away, source? }} odds  Cuotas decimales del partido
+ * @param {object} home  TeamRef con { code?, avgGF?, avgGA?, form?, eloRating?, elo? }
+ * @param {object} away  TeamRef con { code?, avgGF?, avgGA?, form?, eloRating?, elo? }
+ * @param {object} match Partido completo (opcional, para extraer markets[])
  */
-export function modelProbabilities(odds, home, away) {
+export function modelProbabilities(odds, home, away, match = null) {
   const implied = impliedProbabilities(odds);
 
-  const rHome = teamRating(home);
-  const rAway = teamRating(away);
-  const diff = rHome - rAway; // >0 favorece al local
+  // ── Señal 1: Poisson Dixon-Coles ──────────────────────────────────
+  let dcSignal = null;
+  try {
+    if (home?.avgGF != null || away?.avgGF != null) {
+      const dc = dixonColesProbs(home, away);
+      dcSignal = { home: dc.home, draw: dc.draw, away: dc.away };
+    }
+  } catch { /* fuente sin datos suficientes */ }
 
-  // Modelo logístico simple sobre la diferencia de rating.
-  const pHomeCore = 1 / (1 + Math.exp(-4 * diff)); // 0..1
-  const pAwayCore = 1 - pHomeCore;
+  // ── Señal 2: Elo ──────────────────────────────────────────────────
+  let eloSignal = null;
+  try {
+    const homeElo = home?.elo?.rating ?? home?.eloRating ?? null;
+    const awayElo = away?.elo?.rating ?? away?.eloRating ?? null;
+    if (homeElo != null && awayElo != null) {
+      eloSignal = eloProbability(home?.code ?? '', homeElo, awayElo);
+    }
+  } catch { /* sin ratings Elo */ }
 
-  // Probabilidad de empate: alta cuando los equipos están parejos.
-  const drawBase = 0.30 * (1 - Math.abs(diff)); // diff 0 → ~0.30
-  const pDraw = Math.min(0.4, Math.max(0.14, drawBase));
+  // ── Señal 3: Mercado ───────────────────────────────────────────────
+  const marketSignal = getMarketProbs(match, odds);
 
-  const remaining = 1 - pDraw;
-  const model = {
-    home: pHomeCore * remaining,
-    draw: pDraw,
-    away: pAwayCore * remaining,
-  };
+  // ── Blend ──────────────────────────────────────────────────────────
+  const blended = blendProbabilities({
+    dixonColes: dcSignal,
+    elo:        eloSignal,
+    market:     marketSignal,
+  }, DEFAULT_WEIGHTS);
 
-  // Blend 55% mercado / 45% modelo → estabilidad + posibilidad de valor.
-  const W = 0.55;
-  const blended = {
-    home: W * implied.home + (1 - W) * model.home,
-    draw: W * implied.draw + (1 - W) * model.draw,
-    away: W * implied.away + (1 - W) * model.away,
-  };
-  const sum = blended.home + blended.draw + blended.away;
+  // Outputs extra de Dixon-Coles (para MatchCard expandida)
+  let dcExtras = {};
+  try {
+    if (dcSignal) {
+      const dc = dixonColesProbs(home, away);
+      dcExtras = { ou25: dc.ou25, btts: dc.btts, topScore: dc.topScore, topScoreP: dc.topScoreP };
+    }
+  } catch { /* no crítico */ }
+
   return {
-    home: blended.home / sum,
-    draw: blended.draw / sum,
-    away: blended.away / sum,
+    home: blended.home,
+    draw: blended.draw,
+    away: blended.away,
     implied,
+    // Para compatibilidad con ProbabilityBar y otros consumidores
+    ...dcExtras,
+    modelExplanation: blended.explanation,
+    signalsUsed: {
+      dixonColes: dcSignal != null,
+      elo:        eloSignal != null,
+      market:     marketSignal != null,
+    },
   };
 }
 
 // ─── 4. Criterio de Kelly (gestión de bankroll) ───────────────────
+// La implementación canónica vive en src/model/kelly.js. Aquí se
+// re-exporta para mantener la API histórica del adviceEngine intacta.
 
-/**
- * Kelly clásico para un resultado:  f* = (b·p − q) / b
- *   b = cuota − 1 (ganancia neta por unidad)
- *   p = probabilidad del modelo,  q = 1 − p
- * Devuelve la fracción óptima (>0 solo si hay valor).
- */
+/** @see model/kelly.js — f* = (b·p − q) / b */
 export function kellyFraction(probability, decimalOdds) {
-  const b = decimalOdds - 1;
-  if (b <= 0) return 0;
-  const q = 1 - probability;
-  const f = (b * probability - q) / b;
-  return f; // puede ser negativo (sin valor)
+  return kellyFrac(probability, decimalOdds);
 }
 
 /**
- * Convierte la fracción de Kelly en una recomendación de bankroll
- * usando Kelly fraccionario (1/4) para reducir varianza, con tope 8%.
+ * Recomendación de stake (¼ Kelly, tope 8%). Acepta opts opcionales
+ * { bankroll, fraction, cap } sin romper las llamadas de 2 argumentos.
+ * @see model/kelly.js
  */
-export function recommendedStake(probability, decimalOdds) {
-  const full = kellyFraction(probability, decimalOdds);
-  const fractional = full * 0.25; // cuarto de Kelly (estándar conservador)
-  const stakePct = Math.max(0, Math.min(0.08, fractional)) * 100;
-
-  let label, tone;
-  if (stakePct < 0.5) {
-    label = 'Sin valor — Evitar';
-    tone = 'muted';
-  } else if (stakePct <= 2) {
-    label = 'Conservador';
-    tone = 'emerald';
-  } else if (stakePct <= 5) {
-    label = 'Moderado';
-    tone = 'violet';
-  } else {
-    label = 'Agresivo';
-    tone = 'amber';
-  }
-
-  return {
-    stakePct: Number(stakePct.toFixed(1)), // ej. 2.4 (% del bankroll)
-    fullKellyPct: Number((Math.max(0, full) * 100).toFixed(1)),
-    hasValue: stakePct >= 0.5,
-    label,
-    tone,
-  };
+export function recommendedStake(probability, decimalOdds, opts = {}) {
+  return kellyStake(probability, decimalOdds, opts);
 }
 
 // ─── 5. Nivel de Riesgo dinámico ──────────────────────────────────
@@ -264,20 +269,26 @@ export function analyzeMatch(match) {
     return null; // sin cuotas no hay análisis
   }
 
-  const model = modelProbabilities(odds, home, away);
+  // Pasar el partido completo para extraer markets[] si están disponibles
+  const model = modelProbabilities(odds, home, away, match);
   const probs = { home: model.home, draw: model.draw, away: model.away };
 
   // Resultado recomendado = mayor probabilidad del modelo.
   const outcomes = [
     { key: 'home', label: home.name, prob: probs.home, odds: odds.home },
-    { key: 'draw', label: 'Empate', prob: probs.draw, odds: odds.draw },
+    { key: 'draw', label: 'Empate',  prob: probs.draw, odds: odds.draw },
     { key: 'away', label: away.name, prob: probs.away, odds: odds.away },
   ];
   const pick = outcomes.reduce((best, o) => (o.prob > best.prob ? o : best), outcomes[0]);
 
-  const stake = recommendedStake(pick.prob, pick.odds);
-  const risk = riskLevel(probs, { home, away, volatility });
+  // Bankroll del usuario (si lo configuró) para stake en divisa exacta
+  const bankroll = typeof match.bankroll === 'number' ? match.bankroll : null;
+  const stake   = recommendedStake(pick.prob, pick.odds, bankroll ? { bankroll } : {});
+  const risk    = riskLevel(probs, { home, away, volatility });
   const insight = keyStat(home, away, probs);
+
+  // Análisis de valor: mejor cuota por casa + EV exacto vs prob justa del mercado
+  const value = analyzeValue(probs, match, odds);
 
   return {
     probabilities: {
@@ -285,15 +296,23 @@ export function analyzeMatch(match) {
       draw: Math.round(probs.draw * 100),
       away: Math.round(probs.away * 100),
     },
-    margin: Number(((model.implied.overround - 1) * 100).toFixed(1)), // % margen casa
+    margin:  Number(((model.implied.overround - 1) * 100).toFixed(1)),
     pick: {
-      key: pick.key,
-      label: pick.key === 'draw' ? 'Empate' : pick.label,
+      key:         pick.key,
+      label:       pick.key === 'draw' ? 'Empate' : pick.label,
       probability: Math.round(pick.prob * 100),
-      odds: pick.odds,
+      odds:        pick.odds,
     },
     stake,
     risk,
     keyStat: insight,
+    // Nuevos campos (no rompen los componentes existentes — solo agregan)
+    value,                                   // { outcomes, bestValue, explanation }
+    valueBets:        value.outcomes.filter((o) => o.hasValue), // compat: lista de value bets
+    ou25:             model.ou25   ?? null,
+    btts:             model.btts   ?? null,
+    topScore:         model.topScore ?? null,
+    modelExplanation: model.modelExplanation ?? null,
+    signalsUsed:      model.signalsUsed ?? null,
   };
 }

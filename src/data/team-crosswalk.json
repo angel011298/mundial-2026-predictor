@@ -1,0 +1,61 @@
+[
+  { "code":"MEX","es":"México","en":"Mexico","flag":"🇲🇽","group":"A","rank":14,"eloRating":1835,"form":"WWDLW","avgGF":1.8,"avgGA":0.8,"cleanSheets":3,"espnNames":["Mexico","México"],"eloName":"Mexico" },
+  { "code":"KOR","es":"Corea del Sur","en":"South Korea","flag":"🇰🇷","group":"A","rank":23,"eloRating":1770,"form":"WWDLW","avgGF":1.5,"avgGA":1.0,"cleanSheets":2,"espnNames":["South Korea","Korea Republic","Korea DPR"],"eloName":"South Korea" },
+  { "code":"CZE","es":"República Checa","en":"Czech Republic","flag":"🇨🇿","group":"A","rank":37,"eloRating":1756,"form":"WDWLL","avgGF":1.4,"avgGA":1.0,"cleanSheets":2,"espnNames":["Czechia","Czech Republic","Czech Rep."],"eloName":"Czech Republic" },
+  { "code":"RSA","es":"Sudáfrica","en":"South Africa","flag":"🇿🇦","group":"A","rank":63,"eloRating":1630,"form":"WDLLD","avgGF":1.0,"avgGA":1.2,"cleanSheets":1,"espnNames":["South Africa"],"eloName":"South Africa" },
+
+  { "code":"CAN","es":"Canadá","en":"Canada","flag":"🇨🇦","group":"B","rank":31,"eloRating":1748,"form":"WDWLW","avgGF":1.5,"avgGA":1.1,"cleanSheets":2,"espnNames":["Canada"],"eloName":"Canada" },
+  { "code":"MAR","es":"Marruecos","en":"Morocco","flag":"🇲🇦","group":"B","rank":12,"eloRating":1882,"form":"WWWDW","avgGF":1.7,"avgGA":0.6,"cleanSheets":4,"espnNames":["Morocco"],"eloName":"Morocco" },
+  { "code":"NOR","es":"Noruega","en":"Norway","flag":"🇳🇴","group":"B","rank":28,"eloRating":1808,"form":"WWLDW","avgGF":2.1,"avgGA":1.2,"cleanSheets":1,"espnNames":["Norway"],"eloName":"Norway" },
+  { "code":"PAN","es":"Panamá","en":"Panama","flag":"🇵🇦","group":"B","rank":41,"eloRating":1681,"form":"DLWDL","avgGF":1.1,"avgGA":1.3,"cleanSheets":1,"espnNames":["Panama"],"eloName":"Panama" },
+
+  { "code":"ESP","es":"España","en":"Spain","flag":"🇪🇸","group":"C","rank":2,"eloRating":1970,"form":"WWWWD","avgGF":2.4,"avgGA":0.6,"cleanSheets":4,"espnNames":["Spain"],"eloName":"Spain" },
+  { "code":"URU","es":"Uruguay","en":"Uruguay","flag":"🇺🇾","group":"C","rank":15,"eloRating":1842,"form":"WDWLW","avgGF":1.6,"avgGA":1.0,"cleanSheets":2,"espnNames":["Uruguay"],"eloName":"Uruguay" },
+  { "code":"JPN","es":"Japón","en":"Japan","flag":"🇯🇵","group":"C","rank":17,"eloRating":1838,"form":"WWWDW","avgGF":1.9,"avgGA":0.7,"cleanSheets":3,"espnNames":["Japan"],"eloName":"Japan" },
+  { "code":"JOR","es":"Jordania","en":"Jordan","flag":"🇯🇴","group":"C","rank":64,"eloRating":1618,"form":"DWLDL","avgGF":1.0,"avgGA":1.4,"cleanSheets":1,"espnNames":["Jordan"],"eloName":"Jordan" },
+
+  { "code":"USA","es":"Estados Unidos","en":"United States","flag":"🇺🇸","group":"D","rank":16,"eloRating":1799,"form":"WLWDW","avgGF":1.7,"avgGA":1.0,"cleanSheets":2,"espnNames":["United States","USA","US"],"eloName":"USA" },
+  { "code":"COL","es":"Colombia","en":"Colombia","flag":"🇨🇴","group":"D","rank":13,"eloRating":1853,"form":"WWDWW","avgGF":1.8,"avgGA":0.8,"cleanSheets":3,"espnNames":["Colombia"],"eloName":"Colombia" },
+  { "code":"AUS","es":"Australia","en":"Australia","flag":"🇦🇺","group":"D","rank":24,"eloRating":1756,"form":"WDLWD","avgGF":1.3,"avgGA":1.1,"cleanSheets":2,"espnNames":["Australia"],"eloName":"Australia" },
+  { "code":"QAT","es":"Catar","en":"Qatar","flag":"🇶🇦","group":"D","rank":37,"eloRating":1658,"form":"WLDLL","avgGF":1.1,"avgGA":1.5,"cleanSheets":1,"espnNames":["Qatar"],"eloName":"Qatar" },
+
+  { "code":"ARG","es":"Argentina","en":"Argentina","flag":"🇦🇷","group":"E","rank":1,"eloRating":2076,"form":"WWWDW","avgGF":2.3,"avgGA":0.7,"cleanSheets":4,"espnNames":["Argentina"],"eloName":"Argentina" },
+  { "code":"SUI","es":"Suiza","en":"Switzerland","flag":"🇨🇭","group":"E","rank":19,"eloRating":1832,"form":"WDWDL","avgGF":1.4,"avgGA":1.0,"cleanSheets":2,"espnNames":["Switzerland"],"eloName":"Switzerland" },
+  { "code":"NGA","es":"Nigeria","en":"Nigeria","flag":"🇳🇬","group":"E","rank":39,"eloRating":1689,"form":"WWLDW","avgGF":1.5,"avgGA":1.1,"cleanSheets":2,"espnNames":["Nigeria"],"eloName":"Nigeria" },
+  { "code":"BIH","es":"Bosnia y Herzegovina","en":"Bosnia and Herzegovina","flag":"🇧🇦","group":"E","rank":53,"eloRating":1714,"form":"WDWDL","avgGF":1.3,"avgGA":1.1,"cleanSheets":2,"espnNames":["Bosnia and Herzegovina","Bosnia-Herzegovina","Bosnia & Herzegovina","Bosnia"],"eloName":"Bosnia-Herzegovina" },
+
+  { "code":"FRA","es":"Francia","en":"France","flag":"🇫🇷","group":"F","rank":3,"eloRating":2003,"form":"WWDWW","avgGF":2.2,"avgGA":0.8,"cleanSheets":3,"espnNames":["France"],"eloName":"France" },
+  { "code":"SEN","es":"Senegal","en":"Senegal","flag":"🇸🇳","group":"F","rank":18,"eloRating":1743,"form":"WWWDL","avgGF":1.6,"avgGA":0.9,"cleanSheets":3,"espnNames":["Senegal"],"eloName":"Senegal" },
+  { "code":"AUT","es":"Austria","en":"Austria","flag":"🇦🇹","group":"F","rank":22,"eloRating":1790,"form":"WDWWL","avgGF":1.7,"avgGA":1.1,"cleanSheets":2,"espnNames":["Austria"],"eloName":"Austria" },
+  { "code":"PER","es":"Perú","en":"Peru","flag":"🇵🇪","group":"F","rank":49,"eloRating":1682,"form":"DLDLW","avgGF":0.9,"avgGA":1.2,"cleanSheets":1,"espnNames":["Peru"],"eloName":"Peru" },
+
+  { "code":"ENG","es":"Inglaterra","en":"England","flag":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","group":"G","rank":4,"eloRating":1966,"form":"WWWWD","avgGF":2.1,"avgGA":0.5,"cleanSheets":5,"espnNames":["England"],"eloName":"England" },
+  { "code":"DEN","es":"Dinamarca","en":"Denmark","flag":"🇩🇰","group":"G","rank":21,"eloRating":1826,"form":"WDDWL","avgGF":1.5,"avgGA":1.0,"cleanSheets":2,"espnNames":["Denmark"],"eloName":"Denmark" },
+  { "code":"SRB","es":"Serbia","en":"Serbia","flag":"🇷🇸","group":"G","rank":29,"eloRating":1767,"form":"WLWDW","avgGF":1.6,"avgGA":1.2,"cleanSheets":1,"espnNames":["Serbia"],"eloName":"Serbia" },
+  { "code":"CHI","es":"Chile","en":"Chile","flag":"🇨🇱","group":"G","rank":44,"eloRating":1699,"form":"LDLWL","avgGF":1.0,"avgGA":1.3,"cleanSheets":1,"espnNames":["Chile"],"eloName":"Chile" },
+
+  { "code":"BRA","es":"Brasil","en":"Brazil","flag":"🇧🇷","group":"H","rank":5,"eloRating":1948,"form":"WWDWW","avgGF":2.2,"avgGA":0.7,"cleanSheets":3,"espnNames":["Brazil"],"eloName":"Brazil" },
+  { "code":"CMR","es":"Camerún","en":"Cameroon","flag":"🇨🇲","group":"H","rank":42,"eloRating":1628,"form":"WLDWL","avgGF":1.3,"avgGA":1.2,"cleanSheets":1,"espnNames":["Cameroon"],"eloName":"Cameroon" },
+  { "code":"GRE","es":"Grecia","en":"Greece","flag":"🇬🇷","group":"H","rank":48,"eloRating":1658,"form":"DWLDL","avgGF":1.1,"avgGA":1.1,"cleanSheets":2,"espnNames":["Greece"],"eloName":"Greece" },
+  { "code":"CRC","es":"Costa Rica","en":"Costa Rica","flag":"🇨🇷","group":"H","rank":47,"eloRating":1617,"form":"DLWLL","avgGF":1.0,"avgGA":1.4,"cleanSheets":1,"espnNames":["Costa Rica"],"eloName":"Costa Rica" },
+
+  { "code":"POR","es":"Portugal","en":"Portugal","flag":"🇵🇹","group":"I","rank":6,"eloRating":1955,"form":"WWWDW","avgGF":2.3,"avgGA":0.8,"cleanSheets":3,"espnNames":["Portugal"],"eloName":"Portugal" },
+  { "code":"IRN","es":"Irán","en":"Iran","flag":"🇮🇷","group":"I","rank":20,"eloRating":1800,"form":"WWWDD","avgGF":1.4,"avgGA":0.6,"cleanSheets":4,"espnNames":["Iran","IR Iran"],"eloName":"Iran" },
+  { "code":"GHA","es":"Ghana","en":"Ghana","flag":"🇬🇭","group":"I","rank":40,"eloRating":1622,"form":"WLWDL","avgGF":1.4,"avgGA":1.3,"cleanSheets":1,"espnNames":["Ghana"],"eloName":"Ghana" },
+  { "code":"UKR","es":"Ucrania","en":"Ukraine","flag":"🇺🇦","group":"I","rank":26,"eloRating":1781,"form":"WDLWD","avgGF":1.3,"avgGA":1.0,"cleanSheets":2,"espnNames":["Ukraine"],"eloName":"Ukraine" },
+
+  { "code":"NED","es":"Países Bajos","en":"Netherlands","flag":"🇳🇱","group":"J","rank":7,"eloRating":1906,"form":"WWDWW","avgGF":2.0,"avgGA":0.8,"cleanSheets":3,"espnNames":["Netherlands","Holland"],"eloName":"Netherlands" },
+  { "code":"ECU","es":"Ecuador","en":"Ecuador","flag":"🇪🇨","group":"J","rank":25,"eloRating":1742,"form":"WDWWD","avgGF":1.4,"avgGA":0.7,"cleanSheets":3,"espnNames":["Ecuador"],"eloName":"Ecuador" },
+  { "code":"ALG","es":"Argelia","en":"Algeria","flag":"🇩🇿","group":"J","rank":38,"eloRating":1637,"form":"WWLDW","avgGF":1.6,"avgGA":1.1,"cleanSheets":2,"espnNames":["Algeria"],"eloName":"Algeria" },
+  { "code":"POL","es":"Polonia","en":"Poland","flag":"🇵🇱","group":"J","rank":34,"eloRating":1760,"form":"LDWLW","avgGF":1.3,"avgGA":1.2,"cleanSheets":1,"espnNames":["Poland"],"eloName":"Poland" },
+
+  { "code":"BEL","es":"Bélgica","en":"Belgium","flag":"🇧🇪","group":"K","rank":8,"eloRating":1867,"form":"WWDWD","avgGF":2.0,"avgGA":0.9,"cleanSheets":2,"espnNames":["Belgium"],"eloName":"Belgium" },
+  { "code":"ITA","es":"Italia","en":"Italy","flag":"🇮🇹","group":"K","rank":9,"eloRating":1876,"form":"WDWWW","avgGF":1.8,"avgGA":0.7,"cleanSheets":3,"espnNames":["Italy"],"eloName":"Italy" },
+  { "code":"CIV","es":"Costa de Marfil","en":"Ivory Coast","flag":"🇨🇮","group":"K","rank":43,"eloRating":1653,"form":"WWLDW","avgGF":1.5,"avgGA":1.1,"cleanSheets":2,"espnNames":["Ivory Coast","Cote d'Ivoire","Côte d'Ivoire"],"eloName":"Ivory Coast" },
+  { "code":"TUR","es":"Turquía","en":"Turkey","flag":"🇹🇷","group":"K","rank":27,"eloRating":1751,"form":"WDLWL","avgGF":1.6,"avgGA":1.2,"cleanSheets":1,"espnNames":["Turkey","Türkiye"],"eloName":"Turkey" },
+
+  { "code":"GER","es":"Alemania","en":"Germany","flag":"🇩🇪","group":"L","rank":11,"eloRating":1918,"form":"WWWDL","avgGF":2.1,"avgGA":0.9,"cleanSheets":2,"espnNames":["Germany"],"eloName":"Germany" },
+  { "code":"TUN","es":"Túnez","en":"Tunisia","flag":"🇹🇳","group":"L","rank":45,"eloRating":1638,"form":"DWDLL","avgGF":1.0,"avgGA":1.1,"cleanSheets":2,"espnNames":["Tunisia"],"eloName":"Tunisia" },
+  { "code":"KSA","es":"Arabia Saudita","en":"Saudi Arabia","flag":"🇸🇦","group":"L","rank":56,"eloRating":1590,"form":"LDWLL","avgGF":0.9,"avgGA":1.4,"cleanSheets":1,"espnNames":["Saudi Arabia"],"eloName":"Saudi Arabia" },
+  { "code":"PAR","es":"Paraguay","en":"Paraguay","flag":"🇵🇾","group":"L","rank":46,"eloRating":1706,"form":"DDWLD","avgGF":1.1,"avgGA":1.0,"cleanSheets":2,"espnNames":["Paraguay"],"eloName":"Paraguay" }
+]
