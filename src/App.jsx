@@ -1,6 +1,7 @@
 import { ShieldQuestion } from 'lucide-react';
 import Dashboard from './components/Dashboard.jsx';
 import BetSlip from './components/BetSlip.jsx';
+import ResponsibleGaming from './components/ResponsibleGaming.jsx';
 import { BetSlipProvider } from './context/BetSlipContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 
@@ -23,6 +24,7 @@ export default function App() {
           </footer>
 
           <BetSlip />
+          <ResponsibleGaming />
         </div>
       </BetSlipProvider>
     </ToastProvider>
