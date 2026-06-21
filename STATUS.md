@@ -1,4 +1,4 @@
-# STATUS.md — Diagnóstico del proyecto (2026-06-20)
+# STATUS.md — Phase 5 completado (2026-06-20, 6 commits)
 
 ## ✅ Qué funciona
 
@@ -55,19 +55,23 @@ El campo `volatility` existe en el esquema pero ningún proveedor lo popula. El 
 ### 5. Sin Error Boundary en React
 Si cualquier componente lanza una excepción (ej. `analyzeMatch` con datos inesperados), la app muestra pantalla en blanco. No hay `<ErrorBoundary>` en `App.jsx`.
 
-## ❌ Qué falta (no implementado)
+## ✅ Phase 5 Entregado (6 features, 6 commits)
 
-- **Fase eliminatoria / brackets**: No hay vista de Ronda de 32, Octavos, Cuartos, Semis, Final.
-- **Cuotas reales de bookmaker**: The Odds API / Betfair / Pinnacle sin integrar.
-- **Historial de picks del usuario**: No hay persistencia de picks locales.
-- **Bankroll tracker**: El usuario no puede registrar su bankroll ni calcular el stake en dinero real.
-- **Compartir partido**: Sin botón de share/copy.
-- **PWA / offline**: Sin service worker. App no funciona sin conexión.
-- **Notificaciones push**: No hay alertas cuando un partido inicia.
-- **Búsqueda de equipos**: No hay búsqueda por nombre de equipo.
-- **Standings / tabla de grupos**: No se muestra la tabla de posiciones por grupo.
-- **Calendario completo de los 48 equipos**: `worldcup2026.json` tiene solo los fixtures de los grupos confirmados; faltan ~100 partidos del torneo completo.
-- **Dark/light mode**: Solo modo oscuro.
+| # | Feature | Status | Archivos |
+|---|---|---|---|
+| 1 | Bracket + Posiciones | ✅ | `useStandings.js`, `Standings.jsx`, `Bracket.jsx`, `ViewTabs.jsx` |
+| 2 | Perfiles equipo + H2H | ✅ | `TeamProfileModal.jsx` |
+| 3 | Scorecard modelo | ✅ | `useModelScorecard.js`, `ModelScorecard.jsx` |
+| 4 | Bankroll Tracker | ✅ | `useBankroll.js`, `BankrollTracker.jsx` |
+| 5 | PWA instalable | ✅ | `manifest.json`, `sw.js`, `icon-192/512.svg` |
+| 6 | Centro Juego Responsable | ✅ | `ResponsibleGaming.jsx` |
+
+## 🚀 Próximos pasos (Phase 6)
+
+- **i18n ES/EN**: Extracción de strings a objeto traducciones, toggle idioma en header (usar Haiku)
+- **Lint & format**: ESLint + Prettier (configurar dependencias)
+- **Auditoría Lighthouse**: Performance, Accessibility, Best Practices, SEO
+- **Deploy Vercel**: CI/CD automatizado con GitHub Actions
 
 ## 📋 Deuda técnica prioritaria
 

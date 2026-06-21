@@ -1,23 +1,34 @@
 # 🏆 Mundial 2026 · Predictor
 
-SPA **mobile-first** de predicciones y analítica deportiva interactiva, enfocada
-**exclusivamente** en la Copa del Mundo FIFA 2026. Estética tipo *dashboard de
-neobanco / trading premium*: fondo oscuro (zinc-950) con acentos esmeralda y
-violeta eléctrico.
+SPA **mobile-first** de predicciones y analítica deportiva interactiva, enfocada **exclusivamente** en la Copa del Mundo FIFA 2026. Estética tipo *dashboard de neobanco / trading premium*: fondo oscuro (zinc-950) con acentos esmeralda y violeta eléctrico.
 
-> ⚠️ **Juego responsable · +18.** Las probabilidades y montos sugeridos son
-> analíticos/educativos y **no garantizan resultados**.
+> ⚠️ **Juego responsable · +18.** Las probabilidades y montos sugeridos son analíticos/educativos y **no garantizan resultados**. No es asesoramiento financiero.
 
-## ✨ Características
+## ✨ Características Phase 5 (Completo)
 
-- **Botón “ACTUALIZAR EN TIEMPO REAL”** con animación de giro y sello de última sincronización.
-- **Tarjetas analíticas interactivas** por partido con el *Motor de Consejos*:
-  - Probabilidades Victoria/Empate/Victoria (distribución implícita normalizada, sin margen de la casa).
-  - **Nivel de Riesgo** dinámico (Bajo/Medio/Alto) por entropía + volatilidad + disparidad.
-  - **Monto recomendado** vía **Criterio de Kelly** fraccionario (¼ Kelly, tope 8% del bankroll).
-  - **Píldora de estadística clave** generada dinámicamente.
-- Filtros por estado (en vivo / próximos / finalizados) y por grupo (A–L).
-- 100% estático → desplegable gratis en **Vercel** o **Netlify**, soporta tráfico masivo.
+### 📊 Análisis & Predicción
+- **Motor IA**: blend Dixon-Coles (40%) + Elo (25%) + Consenso mercado (35%)
+- **Value betting**: cálculo EV%, recomendaciones stake ¼-Kelly con tope 8%
+- **Tarjetas expandibles** por partido: cuotas, análisis, sliders what-if, heatmap Poisson, comparador casas
+- **Scorecard del modelo**: Brier score, % acierto 1X2, ROI value bets, historial predicciones
+
+### 🎮 Navegación Interactiva
+- **4 vistas**: Partidos | Grupos (12 tablas) | Bracket (R32→Final) | Mis Picks (scorecard + bankroll)
+- **Filtros**: estado (en vivo/próximos/finalizados) + grupo (A–L) con deep-link URL
+- **Perfiles de equipo**: stats base, estadísticas del torneo, H2H vs rivales
+
+### 💰 Bankroll & Picks
+- **Bet Slip**: parlay multilegger con correlación, input bankroll, cálculo Kelly
+- **Bankroll Tracker**: historial picks (W/L/PUSH), balance running, gráfico SVG P&L
+- **localStorage**: persiste predicciones, picks, bankroll, límites
+
+### 🛡️ Responsabilidad
+- **Centro Juego Responsable**: FAB escudo, modal +18, timer sesión, 3 límites configurables
+- **Links ayuda**: Jugadores Anónimos, GamCare, BeGambleAware
+- **Accesibilidad**: aria-labels, focus trap, navegación teclado, colores semánticos
+
+### 📱 PWA Instalable
+- `manifest.json` Android/iOS, Service Worker offline, instalable como app standalone
 
 ## 🚀 Puesta en marcha
 
