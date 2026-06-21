@@ -32,15 +32,22 @@ function StatusTag({ status, minute, kickoff }) {
   );
 }
 
-function TeamRow({ team, score, isPick, showScore }) {
+function TeamRow({ team, score, isPick, showScore, onTeamClick }) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex min-w-0 items-center gap-2.5">
         <span className="text-2xl leading-none" role="img" aria-label={team.name}>{team.flag}</span>
         <div className="min-w-0">
-          <p className={`truncate text-sm font-bold ${isPick ? 'text-emerald-300' : 'text-zinc-100'}`}>
+          <button
+            type="button"
+            onClick={onTeamClick}
+            aria-label={`Ver perfil de ${team.name}`}
+            className={`truncate text-sm font-bold text-left transition-colors hover:text-emerald-300 focus-visible:outline-none focus-visible:underline ${
+              isPick ? 'text-emerald-300' : 'text-zinc-100'
+            }`}
+          >
             {team.name}
-          </p>
+          </button>
           <p className="text-[10px] uppercase tracking-wide text-zinc-500">
             #{team.rank} FIFA · {team.form}
           </p>
@@ -160,7 +167,7 @@ function OddsSection({ home, away, odds, pickKey, match, analysis }) {
 
 // ─── Componente principal ─────────────────────────────────────────
 
-export default function MatchCard({ match }) {
+export default function MatchCard({ match, onTeamClick }) {
   const uid = useId();
   const [open, setOpen] = useState(false);
   const analysis = useMemo(() => analyzeMatch(match), [match]);
@@ -196,13 +203,19 @@ export default function MatchCard({ match }) {
 
       {/* Equipos */}
       <div className="space-y-2.5">
-        <TeamRow team={home} score={home.score} isPick={analysis?.pick.key === 'home'} showScore={showScore} />
+        <TeamRow
+          team={home} score={home.score} isPick={analysis?.pick.key === 'home'} showScore={showScore}
+          onTeamClick={() => onTeamClick?.({ team: { ...home, group }, match })}
+        />
         <div className="flex items-center gap-2" aria-hidden="true">
           <div className="h-px flex-1 border-t border-dashed border-zinc-800" />
           <span className="text-[10px] text-zinc-600">vs</span>
           <div className="h-px flex-1 border-t border-dashed border-zinc-800" />
         </div>
-        <TeamRow team={away} score={away.score} isPick={analysis?.pick.key === 'away'} showScore={showScore} />
+        <TeamRow
+          team={away} score={away.score} isPick={analysis?.pick.key === 'away'} showScore={showScore}
+          onTeamClick={() => onTeamClick?.({ team: { ...away, group }, match })}
+        />
       </div>
 
       {/* Cuotas con botones de slip */}

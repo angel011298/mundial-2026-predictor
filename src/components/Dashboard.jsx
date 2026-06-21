@@ -9,6 +9,7 @@ import MatchCard from './MatchCard.jsx';
 import ViewTabs from './ViewTabs.jsx';
 import Standings from './Standings.jsx';
 import Bracket from './Bracket.jsx';
+import TeamProfileModal from './TeamProfileModal.jsx';
 
 const INTERVAL_LIVE = 45;
 const INTERVAL_IDLE = 90;
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const [error, setError]       = useState(null);
   const [countdown, setCountdown] = useState(null);
   const [activeView, setActiveView] = useState('matches');
+  const [teamProfile, setTeamProfile] = useState(null); // { team, match }
 
   // ── Filters — initialized from URL ────────────────────────────────
   const [statusFilter, setStatusFilterState] = useState(
@@ -195,7 +197,7 @@ export default function Dashboard() {
                 aria-busy={isLoading}
               >
                 {filtered.map((m) => (
-                  <MatchCard key={m.id} match={m} />
+                  <MatchCard key={m.id} match={m} onTeamClick={setTeamProfile} />
                 ))}
               </section>
             )}
@@ -218,6 +220,16 @@ export default function Dashboard() {
           <div id="panel-bracket" role="tabpanel">
             <Bracket matches={matches} groups={worldcup.groups} />
           </div>
+        )}
+
+        {/* Team Profile Modal */}
+        {teamProfile && (
+          <TeamProfileModal
+            team={teamProfile.team}
+            match={teamProfile.match}
+            matches={matches}
+            onClose={() => setTeamProfile(null)}
+          />
         )}
 
         {/* Vista: Mis Picks (scorecard + bankroll — se añaden en features 3 & 4) */}
