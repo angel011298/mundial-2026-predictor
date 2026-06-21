@@ -10,6 +10,9 @@ import ViewTabs from './ViewTabs.jsx';
 import Standings from './Standings.jsx';
 import Bracket from './Bracket.jsx';
 import TeamProfileModal from './TeamProfileModal.jsx';
+import ModelScorecard from './ModelScorecard.jsx';
+import BankrollTracker from './BankrollTracker.jsx';
+import { useModelScorecard } from '../hooks/useModelScorecard.js';
 
 const INTERVAL_LIVE = 45;
 const INTERVAL_IDLE = 90;
@@ -43,6 +46,7 @@ export default function Dashboard() {
   const [countdown, setCountdown] = useState(null);
   const [activeView, setActiveView] = useState('matches');
   const [teamProfile, setTeamProfile] = useState(null); // { team, match }
+  const scorecard = useModelScorecard(matches);
 
   // ── Filters — initialized from URL ────────────────────────────────
   const [statusFilter, setStatusFilterState] = useState(
@@ -232,14 +236,16 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Vista: Mis Picks (scorecard + bankroll — se añaden en features 3 & 4) */}
+        {/* Vista: Mis Picks */}
         {activeView === 'picks' && (
-          <div id="panel-picks" role="tabpanel">
-            <div className="card p-8 text-center text-sm text-zinc-500">
-              <p className="text-2xl mb-2">📈</p>
-              <p className="font-semibold text-zinc-300">Mis Picks</p>
-              <p className="text-xs mt-1 text-zinc-600">El scorecard y bankroll tracker se añaden en el siguiente commit.</p>
-            </div>
+          <div id="panel-picks" role="tabpanel" className="space-y-6">
+            <ModelScorecard
+              records={scorecard.records}
+              stats={scorecard.stats}
+              onClear={scorecard.clearScorecard}
+            />
+            <hr className="border-zinc-800" />
+            <BankrollTracker />
           </div>
         )}
       </main>
