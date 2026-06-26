@@ -2,7 +2,7 @@
  * monteCarlo.js — Motor probabilístico del Simulador Monte Carlo
  * ─────────────────────────────────────────────────────────────────
  * Expone las primitivas de bajo nivel para la simulación:
- *   makeRng       — PRNG mulberry32 sembrable y determinista
+ *   mulberry32    — PRNG sembrable y determinista (alias: makeRng)
  *   samplePoisson — muestreador Knuth (≠ PMF de dixonColes.js)
  *   deriveLambdas — λ del partido: DC base + tilt Elo
  *   sampleMatch   — un resultado completo {gh, ga}
@@ -14,7 +14,11 @@ import { formMultiplier, LEAGUE_AVG } from './dixonColes.js';
 import { HOST_CODES, HOME_ADV_ELO }   from './elo.js';
 
 // ─── Constantes calibrables ──────────────────────────────────────
-/** Peso del ajuste Elo sobre λ (ver §3.1). Se calibra en backtest.mjs (Fase 7). */
+/**
+ * Peso del ajuste Elo sobre λ (ver §3.1 de docs/montecarlo.md).
+ * Valor provisional; se añade a la lista de parámetros de scripts/backtest.mjs.
+ * TODO: calibrar en Fase 3 histórica.
+ */
 export const GAMMA = 0.15;
 
 /** Factores de localía (alineados con dixonColes.js) */
@@ -30,11 +34,12 @@ function clamp(v, min, max) {
 /**
  * Devuelve una función de aleatoriedad uniforme [0, 1) determinista.
  * Dos instancias con la misma seed producen la misma secuencia.
+ * PRNG puro: no toca Math.random() ni estado global.
  *
  * @param {number} seed  Entero de 32 bits
  * @returns {() => number}
  */
-export function makeRng(seed) {
+export function mulberry32(seed) {
   let s = seed >>> 0; // asegurar uint32
   return function () {
     s = (s + 0x6D2B79F5) | 0;
@@ -43,6 +48,9 @@ export function makeRng(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/** Alias histórico usado en docs/montecarlo.md y fases MC-2+. */
+export const makeRng = mulberry32;
 
 // ─── Muestreador Poisson (Knuth) ─────────────────────────────────
 /**

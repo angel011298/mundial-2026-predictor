@@ -1,14 +1,28 @@
 import { describe, test, expect } from 'vitest';
 import {
+  mulberry32,
   makeRng,
   samplePoisson,
   deriveLambdas,
   sampleMatch,
   GAMMA,
 } from '../monteCarlo.js';
+import { LEAGUE_AVG } from '../dixonColes.js';
 
-// ─── makeRng ────────────────────────────────────────────────────
-describe('makeRng', () => {
+// ─── mulberry32 / makeRng ───────────────────────────────────────
+describe('mulberry32', () => {
+  test('makeRng es alias de mulberry32', () => {
+    expect(makeRng).toBe(mulberry32);
+  });
+
+  test('misma seed → misma secuencia (mulberry32)', () => {
+    const r1 = mulberry32(2026);
+    const r2 = mulberry32(2026);
+    const seq1 = Array.from({ length: 50 }, () => r1());
+    const seq2 = Array.from({ length: 50 }, () => r2());
+    expect(seq1).toEqual(seq2);
+  });
+
   test('misma seed → misma secuencia', () => {
     const r1 = makeRng(42);
     const r2 = makeRng(42);
@@ -94,6 +108,25 @@ describe('deriveLambdas', () => {
     const neutral = { ...avg, code: 'ARG' };
     const [lH, lA] = deriveLambdas(neutral, neutral, {});
     expect(lH).toBeCloseTo(lA, 3);
+  });
+
+  test('tilt=1 (Elo diff=0, sin sede) no altera la base DC', () => {
+    // attack=defense=1, form='', no host → base = 1·1·LEAGUE_AVG·1·1 = LEAGUE_AVG.
+    // Con Elo idéntico, tilt = exp(GAMMA·0/400) = 1 → λ no se desplaza.
+    const team = { code: 'NEU', attack: 1.0, defense: 1.0, elo: 1500, form: '' };
+    const [lH, lA] = deriveLambdas(team, team, {});
+    expect(lH).toBeCloseTo(LEAGUE_AVG, 10);
+    expect(lA).toBeCloseTo(LEAGUE_AVG, 10);
+  });
+
+  test('Elo idéntico pero ataques asimétricos: el tilt no interviene', () => {
+    // Misma elo → tilt=1; cualquier diferencia en λ proviene solo de attack/defense.
+    const strong = { code: 'AAA', attack: 1.4, defense: 0.9, elo: 1600, form: '' };
+    const weak   = { code: 'BBB', attack: 0.8, defense: 1.1, elo: 1600, form: '' };
+    const [lH, lA] = deriveLambdas(strong, weak, {});
+    // lamH base = 1.4 · 1.1 · LEAGUE_AVG ; lamA base = 0.8 · 0.9 · LEAGUE_AVG
+    expect(lH).toBeCloseTo(1.4 * 1.1 * LEAGUE_AVG, 10);
+    expect(lA).toBeCloseTo(0.8 * 0.9 * LEAGUE_AVG, 10);
   });
 
   test('sede (USA) → lamH > lamA', () => {
