@@ -5,9 +5,26 @@ import {
   samplePoisson,
   deriveLambdas,
   sampleMatch,
+  simulateGroupMatch,
+  simulateGroup,
+  rankBestThirds,
   GAMMA,
 } from '../monteCarlo.js';
 import { LEAGUE_AVG } from '../dixonColes.js';
+
+// ─── Helpers de test ────────────────────────────────────────────
+const team = (code, overrides = {}) => ({
+  code,
+  attack: 1.0, defense: 1.0, elo: 1500, form: '',
+  ...overrides,
+});
+
+// Fixture con 4 equipos y resultados inyectados como playedResults.
+// teams = [A, B, C, D]  →  GROUP_FIXTURES: [0,1]=A:B, [2,3]=C:D,
+//   [0,2]=A:C, [1,3]=B:D, [0,3]=A:D, [1,2]=B:C
+function makePlayedResults(entries) {
+  return new Map(entries.map(([h, a, gh, ga]) => [`${h}:${a}`, { gh, ga }]));
+}
 
 // ─── mulberry32 / makeRng ───────────────────────────────────────
 describe('mulberry32', () => {
@@ -221,5 +238,199 @@ describe('GAMMA', () => {
     expect(typeof GAMMA).toBe('number');
     expect(GAMMA).toBeGreaterThan(0);
     expect(GAMMA).toBeLessThan(1);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// MC-2: simulateGroupMatch
+// ═══════════════════════════════════════════════════════════════════
+describe('simulateGroupMatch', () => {
+  const home = team('ARG');
+  const away = team('BRA');
+  const rng  = makeRng(1);
+
+  test('usa playedResults cuando la clave está presente', () => {
+    const played = new Map([['ARG:BRA', { gh: 2, ga: 1 }]]);
+    const result = simulateGroupMatch(home, away, rng, played);
+    expect(result).toEqual({ gh: 2, ga: 1, fromReal: true });
+  });
+
+  test('samplea cuando la clave no está (fromReal=false)', () => {
+    const result = simulateGroupMatch(home, away, makeRng(99), undefined);
+    expect(result.fromReal).toBe(false);
+    expect(Number.isInteger(result.gh)).toBe(true);
+    expect(Number.isInteger(result.ga)).toBe(true);
+  });
+
+  test('resultado real no consume el RNG (reproducible después)', () => {
+    const rng1 = makeRng(7);
+    const rng2 = makeRng(7);
+    const played = new Map([['ARG:BRA', { gh: 1, ga: 0 }]]);
+    simulateGroupMatch(home, away, rng1, played); // consume played, no RNG
+    simulateGroupMatch(home, away, rng1);          // samplea con rng1
+    simulateGroupMatch(home, away, rng2);          // samplea con rng2 (misma pos)
+    // Ambos samplers deben generar el mismo resultado
+    const r1 = simulateGroupMatch(home, away, rng1);
+    const r2 = simulateGroupMatch(home, away, rng2);
+    expect(r1).toEqual(r2);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// MC-2: simulateGroup — cascade FIFA
+// ═══════════════════════════════════════════════════════════════════
+describe('simulateGroup', () => {
+  // GROUP_FIXTURES con teams=[A,B,C,D]:
+  //   [0,1]=A:B  [2,3]=C:D  [0,2]=A:C  [1,3]=B:D  [0,3]=A:D  [1,2]=B:C
+
+  test('ganador claro sin empates (A primer, D último)', () => {
+    // A beats all; B>C>D
+    const [A, B, C, D] = ['AAA','BBB','CCC','DDD'].map(c => team(c));
+    const group = { id: 'T', teams: [A, B, C, D] };
+    const played = makePlayedResults([
+      ['AAA','BBB', 3,0],  // A:B
+      ['CCC','DDD', 2,1],  // C:D
+      ['AAA','CCC', 2,0],  // A:C
+      ['BBB','DDD', 1,0],  // B:D
+      ['AAA','DDD', 1,0],  // A:D
+      ['BBB','CCC', 1,0],  // B:C
+    ]);
+    // A: W3 → 9pts; B: W2,L1 → 6pts; C: W1,L2 → 3pts; D: W0,L3 → 0pts
+    const result = simulateGroup(group, makeRng(1), played);
+    expect(result.map(s => s.team.code)).toEqual(['AAA','BBB','CCC','DDD']);
+    expect(result[0].Pts).toBe(9);
+    expect(result[3].Pts).toBe(0);
+  });
+
+  test('desempate Pts→GD: A y D empatan en Pts, A gana por GD', () => {
+    // A:Pts=6,GD=+2 | D:Pts=6,GD=0 | B,C: 3pts each
+    const [A, B, C, D] = ['AAA','BBB','CCC','DDD'].map(c => team(c));
+    const group = { id: 'T', teams: [A, B, C, D] };
+    const played = makePlayedResults([
+      ['AAA','BBB', 2,0],  // A beats B 2-0
+      ['CCC','DDD', 0,1],  // D beats C 0-1(gh=0,ga=1)
+      ['AAA','CCC', 1,0],  // A beats C
+      ['BBB','DDD', 1,0],  // B beats D
+      ['AAA','DDD', 0,1],  // D beats A (ga=1)
+      ['BBB','CCC', 0,1],  // C beats B (ga=1)
+    ]);
+    // A: beats B(2-0), beats C(1-0), loses to D(0-1) → W2,L1, GF=3,GA=1,GD=+2, Pts=6
+    // D: beats C(C:D gh=0,ga=1→D away gets ga=1), beats A(A:D gh=0,ga=1→D away scores),
+    //    loses to B(B:D gh=1,ga=0→D away, GA+1) → W2,L1, GF=2,GA=2,GD=0, Pts=6
+
+    const result = simulateGroup(group, makeRng(1), played);
+    expect(result[0].team.code).toBe('AAA'); // A: GD=+2
+    expect(result[1].team.code).toBe('DDD'); // D: GD=0
+  });
+
+  test('desempate H2H: A y D globalmente igualados, A gana el H2H directo', () => {
+    // Scenario calculado: A=D=6pts,GD+1,GF=3; B=C=3pts,GD-1,GF=2
+    // H2H A vs D: A:D gh=1,ga=0 → A wins. H2H B vs C: B:C gh=1,ga=0 → B wins.
+    const [A, B, C, D] = ['AAA','BBB','CCC','DDD'].map(c => team(c));
+    const group = { id: 'H', teams: [A, B, C, D] };
+    const played = makePlayedResults([
+      ['AAA','BBB', 2,1],  // A beats B
+      ['CCC','DDD', 1,2],  // D beats C (gh=1,ga=2 → C home, D away scores 2)
+      ['AAA','CCC', 0,1],  // C beats A
+      ['BBB','DDD', 0,1],  // D beats B
+      ['AAA','DDD', 1,0],  // A beats D ← clave del H2H
+      ['BBB','CCC', 1,0],  // B beats C ← clave del H2H
+    ]);
+    const result = simulateGroup(group, makeRng(1), played);
+    expect(result.map(s => s.team.code)).toEqual(['AAA','DDD','BBB','CCC']);
+  });
+
+  test('empate triple en H2H (ciclo A>B>C>A) → orden determinista por seed', () => {
+    // A beats B, B beats C, C beats A — todos 6pts,GD+1,GF=2. D=0pts.
+    // H2H también completamente empatado → sorteo RNG.
+    const [A, B, C, D] = ['AAA','BBB','CCC','DDD'].map(c => team(c));
+    const group = { id: 'C', teams: [A, B, C, D] };
+    const played = makePlayedResults([
+      ['AAA','BBB', 1,0],  // A beats B
+      ['CCC','DDD', 1,0],  // C beats D
+      ['AAA','CCC', 0,1],  // C beats A
+      ['BBB','DDD', 1,0],  // B beats D
+      ['AAA','DDD', 1,0],  // A beats D
+      ['BBB','CCC', 1,0],  // B beats C
+    ]);
+
+    const result1 = simulateGroup(group, makeRng(42), played);
+    const result2 = simulateGroup(group, makeRng(42), played); // misma seed
+    const result3 = simulateGroup(group, makeRng(99), played); // seed distinta
+
+    // Determinismo: misma seed → mismo orden
+    expect(result1.map(s => s.team.code)).toEqual(result2.map(s => s.team.code));
+
+    // D siempre es 4º (0 puntos, claro último)
+    expect(result1[3].team.code).toBe('DDD');
+    expect(result3[3].team.code).toBe('DDD');
+
+    // Los tres primeros son {A,B,C} en algún orden
+    const top3 = new Set(result1.slice(0,3).map(s => s.team.code));
+    expect(top3).toEqual(new Set(['AAA','BBB','CCC']));
+  });
+
+  test('todos los partidos con played → P=3 para cada equipo', () => {
+    const [A, B, C, D] = ['P0','P1','P2','P3'].map(c => team(c));
+    const group = { id: 'P', teams: [A, B, C, D] };
+    const played = makePlayedResults([
+      ['P0','P1',1,0],['P2','P3',1,0],['P0','P2',1,0],
+      ['P1','P3',1,0],['P0','P3',1,0],['P1','P2',1,0],
+    ]);
+    const result = simulateGroup(group, makeRng(1), played);
+    expect(result.every(s => s.P === 3)).toBe(true);
+    expect(result.reduce((sum, s) => sum + s.Pts, 0)).toBe(18); // 6 partidos × 3pts
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// MC-2: rankBestThirds
+// ═══════════════════════════════════════════════════════════════════
+describe('rankBestThirds', () => {
+  // Helpers para mock
+  const mockThird = (code, Pts, GD, GF = 0) => ({
+    team: team(code), group: code[0],
+    P:3, W:0, D:0, L:0, GF, GA: GF - GD, GD, Pts,
+  });
+  const wrapGroup = third => [null, null, third, null];
+
+  test('devuelve exactamente 8 equipos de 12', () => {
+    const groups = Array.from({ length: 12 }, (_, i) =>
+      wrapGroup(mockThird(`T${i}`, i % 7, 0))
+    );
+    const result = rankBestThirds(groups, makeRng(1));
+    expect(result).toHaveLength(8);
+  });
+
+  test('los 8 con Pts más altos clasifican (sin empates)', () => {
+    // Pts = 9,8,7,6,5,4,3,2 → todos distintos, top-8 claros
+    const pts = [9,8,7,6,5,4,3,2,1,0,0,0];
+    const groups = pts.map((p, i) => wrapGroup(mockThird(`T${i}`, p, 0)));
+    const result = rankBestThirds(groups, makeRng(1));
+    const resultPts = result.map(s => s.Pts).sort((a,b) => b-a);
+    expect(resultPts).toEqual([9,8,7,6,5,4,3,2]);
+  });
+
+  test('empate en Pts resuelto por GD', () => {
+    // 9 terceros con Pts=5 y GD distintos; el de GD=-3 (el peor) no clasifica
+    const gds = [5,4,3,2,1,0,-1,-2,-3];
+    const extras = [mockThird('E0',4,0), mockThird('E1',4,0), mockThird('E2',4,0)];
+    const thirds = gds.map((gd, i) => mockThird(`T${i}`, 5, gd));
+    const groups = [...thirds, ...extras].map(wrapGroup);
+    const result = rankBestThirds(groups, makeRng(1));
+    const codes = result.map(s => s.team.code);
+    // Los primeros 8 en ranking: T0..T7 (GD 5..−2), T8 (GD=−3) no clasifica
+    expect(codes).not.toContain('T8');
+    expect(codes).toContain('T0');
+    expect(codes).toContain('T7');
+  });
+
+  test('determinista: misma seed → mismo orden cuando hay empates', () => {
+    const groups = Array.from({ length: 12 }, (_, i) =>
+      wrapGroup(mockThird(`E${i}`, 4, 0, i))  // mismo Pts y GD → GF como desempate
+    );
+    const r1 = rankBestThirds(groups, makeRng(77));
+    const r2 = rankBestThirds(groups, makeRng(77));
+    expect(r1.map(s => s.team.code)).toEqual(r2.map(s => s.team.code));
   });
 });
