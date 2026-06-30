@@ -12,6 +12,7 @@
  *   simulateKnockoutMatch   — partido eliminatorio: 90min → ET → penales
  *   fillBracket             — crea los 31 KnockoutNodes desde el template
  *   simulateBracket         — recorre R32→R16→QF→SF→F y devuelve el campeón
+ *   runTournamentSimulation — N iteraciones completas con agregación en streaming
  *
  * Diseño documentado en docs/montecarlo.md.
  */
@@ -466,4 +467,152 @@ export function simulateBracket(qualified, rng) {
     champion:                   byId.get('mf_01')?.result?.winner ?? null,
     isApproximateThirdsMapping: true,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MC-4 — Agregación en streaming: runTournamentSimulation
+// ═══════════════════════════════════════════════════════════════════
+
+const GLETTERS = 'ABCDEFGHIJKL'.split('');
+
+/**
+ * Ejecuta N simulaciones completas del torneo (grupos → bracket) y agrega
+ * los resultados en streaming — nunca guarda corridas individuales en memoria
+ * (decisión §14-4).
+ *
+ * Entradas esperadas
+ * ──────────────────
+ * @param {Array<{id:string, teams:object[]}>} groups
+ *   12 grupos. Cada equipo debe ser un TeamStrength:
+ *   { code, attack, defense, elo, form }.
+ *   Fallbacks: attack=defense=1, elo=1500, form=''.
+ *
+ * @param {number} nIterations  Iteraciones Monte Carlo (default 10 000).
+ * @param {number} seed         Semilla del PRNG para determinismo (default 42).
+ * @param {Map<string,{gh:number,ga:number}>} [playedResults]
+ *   Resultados reales de fase de grupos para condicionar la simulación.
+ *   Clave: "${homeCode}:${awayCode}" en el orden fijo de GROUP_FIXTURES.
+ *
+ * Salida (Map<code, TeamResult>)
+ * ──────────────────────────────
+ * TeamResult: {
+ *   code, groupId,
+ *   pAdvance,   // P(clasificar de grupo)
+ *   pR16,       // P(ganar R32 → llegar a R16)
+ *   pQF,        // P(ganar R16 → llegar a QF)
+ *   pSF,        // P(ganar QF  → llegar a SF)
+ *   pFinal,     // P(ganar SF  → llegar a Final)
+ *   pChampion,  // P(ganar Final = Campeón)
+ *   groupPosDist: [f1º, f2º, f3º, f4º],  // frecuencias de posición
+ *   se: { pAdvance, pR16, pQF, pSF, pFinal, pChampion }  // error estándar binomial √(p(1-p)/N)
+ * }
+ *
+ * Invariantes exactas por construcción (suma sobre las 48 selecciones):
+ *   Σ pAdvance  = 32,  Σ pR16 = 16,  Σ pQF = 8,
+ *   Σ pSF       = 4,   Σ pFinal = 2,  Σ pChampion = 1
+ */
+export function runTournamentSimulation(groups, nIterations = 10_000, seed = 42, playedResults = null) {
+  // ── Contadores acumulados (uno por selección) ────────────────────
+  const acc = new Map();
+  for (const g of groups) {
+    for (const t of g.teams) {
+      acc.set(t.code, {
+        groupId:       g.id,
+        advanceCount:  0,
+        r16Count:      0,
+        qfCount:       0,
+        sfCount:       0,
+        finalCount:    0,
+        championCount: 0,
+        posDist:       [0, 0, 0, 0],
+      });
+    }
+  }
+
+  const rng = mulberry32(seed);
+
+  // ── Bucle Monte Carlo ────────────────────────────────────────────
+  for (let iter = 0; iter < nIterations; iter++) {
+    // 1. Simular los 12 grupos → [1º, 2º, 3º, 4º] por grupo
+    const allGroupResults = groups.map(g => simulateGroup(g, rng, playedResults));
+
+    // 2. Acumular posiciones en el grupo
+    for (let gi = 0; gi < groups.length; gi++) {
+      const ranked = allGroupResults[gi];
+      for (let pos = 0; pos < 4; pos++) {
+        acc.get(ranked[pos].team.code).posDist[pos]++;
+      }
+    }
+
+    // 3. Clasificación: 1º y 2º siempre; 3º solo si está en el top-8
+    const bestThirds = rankBestThirds(allGroupResults, rng);
+    const thirdSet   = new Set(bestThirds.map(s => s.team.code));
+
+    for (let gi = 0; gi < groups.length; gi++) {
+      const ranked = allGroupResults[gi];
+      acc.get(ranked[0].team.code).advanceCount++;
+      acc.get(ranked[1].team.code).advanceCount++;
+      if (thirdSet.has(ranked[2].team.code)) {
+        acc.get(ranked[2].team.code).advanceCount++;
+      }
+    }
+
+    // 4. Armar el mapa qualified para el bracket
+    const qualified = {};
+    for (let gi = 0; gi < 12; gi++) {
+      const gl = GLETTERS[gi];
+      qualified[`1${gl}`] = allGroupResults[gi][0].team;
+      qualified[`2${gl}`] = allGroupResults[gi][1].team;
+    }
+    for (let i = 0; i < 8; i++) {
+      qualified[`T${i + 1}`] = bestThirds[i].team;
+    }
+
+    // 5. Simular bracket (MC-3): 31 nodos R32→F
+    const { nodes } = simulateBracket(qualified, rng);
+
+    // 6. Acumular avance en eliminatorias
+    //    Ganar en ronda R → el ganador "alcanzó" la siguiente ronda
+    for (const node of nodes) {
+      if (!node.result) continue;
+      const a = acc.get(node.result.winner.code);
+      if (!a) continue;
+      switch (node.round) {
+        case 'R32': a.r16Count++;      break;
+        case 'R16': a.qfCount++;       break;
+        case 'QF':  a.sfCount++;       break;
+        case 'SF':  a.finalCount++;    break;
+        case 'F':   a.championCount++; break;
+      }
+    }
+  }
+
+  // ── Convertir contadores a probabilidades + error estándar ───────
+  const N       = nIterations;
+  const results = new Map();
+
+  for (const [code, a] of acc) {
+    const props = {
+      pAdvance:  a.advanceCount  / N,
+      pR16:      a.r16Count      / N,
+      pQF:       a.qfCount       / N,
+      pSF:       a.sfCount       / N,
+      pFinal:    a.finalCount    / N,
+      pChampion: a.championCount / N,
+    };
+    // Error estándar binomial: √(p·(1−p)/N)
+    const se = {};
+    for (const [k, v] of Object.entries(props)) {
+      se[k] = Math.sqrt(v * (1 - v) / N);
+    }
+    results.set(code, {
+      code,
+      groupId:      a.groupId,
+      ...props,
+      groupPosDist: a.posDist.map(c => c / N),
+      se,
+    });
+  }
+
+  return results;
 }

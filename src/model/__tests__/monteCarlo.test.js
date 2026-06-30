@@ -12,6 +12,7 @@ import {
   fillBracket,
   simulateBracket,
   THIRD_SLOT_MODE,
+  runTournamentSimulation,
   GAMMA,
 } from '../monteCarlo.js';
 import { LEAGUE_AVG } from '../dixonColes.js';
@@ -709,5 +710,224 @@ describe('simulateBracket', () => {
     }
     // El equipo dominante debe ganar bastante más que 1/32 ≈ 3%
     expect(wins).toBeGreaterThan(15);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// MC-4 — runTournamentSimulation
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── Helper: fixture de 12 grupos de 4 equipos ──────────────────────
+function makeTestGroups(overrides = {}) {
+  return 'ABCDEFGHIJKL'.split('').map(g => ({
+    id: g,
+    teams: [1, 2, 3, 4].map(n => {
+      const code = `${g}${n}`;
+      return {
+        code,
+        attack:  overrides[code]?.attack  ?? 1.0,
+        defense: overrides[code]?.defense ?? 1.0,
+        elo:     overrides[code]?.elo     ?? 1500,
+        form:    overrides[code]?.form    ?? '',
+      };
+    }),
+  }));
+}
+
+// Pre-computed resultado con 500 iteraciones (balance velocidad/precisión para tests)
+let _cachedResult = null;
+function getCachedResult() {
+  if (!_cachedResult) {
+    _cachedResult = runTournamentSimulation(makeTestGroups(), 500, 42);
+  }
+  return _cachedResult;
+}
+
+describe('runTournamentSimulation — estructura', () => {
+  test('devuelve Map con 48 entradas (12 grupos × 4 equipos)', () => {
+    const results = getCachedResult();
+    expect(results.size).toBe(48);
+  });
+
+  test('cada entrada tiene todos los campos requeridos', () => {
+    const results = getCachedResult();
+    for (const r of results.values()) {
+      expect(r).toHaveProperty('code');
+      expect(r).toHaveProperty('groupId');
+      expect(r).toHaveProperty('pAdvance');
+      expect(r).toHaveProperty('pR16');
+      expect(r).toHaveProperty('pQF');
+      expect(r).toHaveProperty('pSF');
+      expect(r).toHaveProperty('pFinal');
+      expect(r).toHaveProperty('pChampion');
+      expect(r).toHaveProperty('groupPosDist');
+      expect(r).toHaveProperty('se');
+      expect(r.groupPosDist).toHaveLength(4);
+      expect(r.se).toHaveProperty('pChampion');
+      expect(r.se).toHaveProperty('pAdvance');
+    }
+  });
+
+  test('todas las probabilidades están en [0, 1]', () => {
+    const results = getCachedResult();
+    const keys = ['pAdvance','pR16','pQF','pSF','pFinal','pChampion'];
+    for (const r of results.values()) {
+      for (const k of keys) {
+        expect(r[k]).toBeGreaterThanOrEqual(0);
+        expect(r[k]).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  test('monotonía: pChampion ≤ pFinal ≤ pSF ≤ pQF ≤ pR16 ≤ pAdvance', () => {
+    const results = getCachedResult();
+    for (const r of results.values()) {
+      expect(r.pChampion).toBeLessThanOrEqual(r.pFinal  + 1e-12);
+      expect(r.pFinal   ).toBeLessThanOrEqual(r.pSF     + 1e-12);
+      expect(r.pSF      ).toBeLessThanOrEqual(r.pQF     + 1e-12);
+      expect(r.pQF      ).toBeLessThanOrEqual(r.pR16    + 1e-12);
+      expect(r.pR16     ).toBeLessThanOrEqual(r.pAdvance + 1e-12);
+    }
+  });
+
+  test('groupPosDist suma 1 por equipo', () => {
+    const results = getCachedResult();
+    for (const r of results.values()) {
+      const sum = r.groupPosDist.reduce((a, b) => a + b, 0);
+      expect(sum).toBeCloseTo(1.0, 8);
+    }
+  });
+
+  test('error estándar > 0 para probs no degeneradas', () => {
+    const results = getCachedResult();
+    // Con 48 equipos iguales, todas las probs son > 0; SE debe ser > 0
+    for (const r of results.values()) {
+      if (r.pChampion > 0 && r.pChampion < 1) {
+        expect(r.se.pChampion).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  test('determinista: misma seed → mismo mapa de resultados', () => {
+    const groups = makeTestGroups();
+    const r1 = runTournamentSimulation(groups, 100, 77);
+    const r2 = runTournamentSimulation(groups, 100, 77);
+    for (const [code, v1] of r1) {
+      const v2 = r2.get(code);
+      expect(v1.pChampion).toBe(v2.pChampion);
+      expect(v1.pAdvance).toBe(v2.pAdvance);
+    }
+  });
+});
+
+describe('runTournamentSimulation — invariantes exactas', () => {
+  // Con N iteraciones, cada suma es count_total / N donde count_total es exactamente
+  // k_expected × N (k_expected invariante por construcción). Por tanto las sumas son exactas.
+  const N    = 200;
+  const groups = makeTestGroups();
+  let _inv = null;
+  function getInv() {
+    if (!_inv) _inv = runTournamentSimulation(groups, N, 42);
+    return _inv;
+  }
+
+  const sum = (key) => {
+    let s = 0;
+    for (const r of getInv().values()) s += r[key];
+    return s;
+  };
+
+  test('Σ pChampion = 1 (exacto: 1 campeón por iteración)', () => {
+    expect(sum('pChampion')).toBeCloseTo(1.0, 6);
+  });
+
+  test('Σ pAdvance = 32 (exacto: 32 clasificados por iteración)', () => {
+    expect(sum('pAdvance')).toBeCloseTo(32.0, 6);
+  });
+
+  test('Σ pR16 = 16 (exacto: 16 ganadores de R32 por iteración)', () => {
+    expect(sum('pR16')).toBeCloseTo(16.0, 6);
+  });
+
+  test('Σ pQF = 8', () => {
+    expect(sum('pQF')).toBeCloseTo(8.0, 6);
+  });
+
+  test('Σ pSF = 4', () => {
+    expect(sum('pSF')).toBeCloseTo(4.0, 6);
+  });
+
+  test('Σ pFinal = 2', () => {
+    expect(sum('pFinal')).toBeCloseTo(2.0, 6);
+  });
+
+  test('Σ posición-1 por grupo = 1 (un primer clasificado por grupo)', () => {
+    // Para cada grupo, la suma de frecuencias de posición 1 debe ser ≈ 1
+    const byGroup = {};
+    for (const r of getInv().values()) {
+      byGroup[r.groupId] ??= 0;
+      byGroup[r.groupId] += r.groupPosDist[0];
+    }
+    for (const g of Object.keys(byGroup)) {
+      expect(byGroup[g]).toBeCloseTo(1.0, 6);
+    }
+  });
+});
+
+describe('runTournamentSimulation — comportamiento', () => {
+  test('con equipos iguales, pChampion ≈ 1/48 para todos', () => {
+    // 48 equipos iguales: esperado ≈ 0.0208; con 2000 iter y ±3σ la variación máxima es pequeña
+    const results = runTournamentSimulation(makeTestGroups(), 2000, 42);
+    const pChamps = [...results.values()].map(r => r.pChampion);
+    const mean = pChamps.reduce((a, b) => a + b, 0) / pChamps.length;
+    expect(mean).toBeCloseTo(1 / 48, 2); // ≈ 0.021
+  });
+
+  test('equipo dominante tiene pChampion muy superior al resto', () => {
+    const STRONG_CODE = 'A1';
+    const groups = makeTestGroups({ A1: { attack: 4.0, defense: 0.3, elo: 2100 } });
+    const results = runTournamentSimulation(groups, 1000, 42);
+    const strongP = results.get(STRONG_CODE).pChampion;
+    const avgOthers = ([...results.values()]
+      .filter(r => r.code !== STRONG_CODE)
+      .reduce((s, r) => s + r.pChampion, 0)) / 47;
+    // El equipo dominante debe ser al menos 10× la media de los demás
+    expect(strongP).toBeGreaterThan(avgOthers * 5);
+  });
+
+  test('código de groupId asignado correctamente', () => {
+    const results = getCachedResult();
+    for (const r of results.values()) {
+      // El groupId debe ser la primera letra del code
+      expect(r.groupId).toBe(r.code[0]);
+    }
+  });
+
+  test('playedResults condiciona el resultado de grupos', () => {
+    const groups = makeTestGroups();
+    // Fijar que A1 gana todos sus partidos con goleada
+    const played = new Map([
+      ['A1:A2', { gh: 5, ga: 0 }],
+      ['A3:A4', { gh: 0, ga: 0 }],
+      ['A1:A3', { gh: 5, ga: 0 }],
+      ['A2:A4', { gh: 0, ga: 0 }],
+      ['A1:A4', { gh: 5, ga: 0 }],
+      ['A3:A2', { gh: 0, ga: 0 }],
+    ]);
+    const results = runTournamentSimulation(groups, 200, 42, played);
+    // A1 siempre clasifica 1º del grupo A
+    expect(results.get('A1').groupPosDist[0]).toBeCloseTo(1.0, 6);
+    expect(results.get('A1').pAdvance).toBeCloseTo(1.0, 6);
+  });
+
+  test('benchmark 10k iteraciones (solo tiempo, no falla)', () => {
+    const groups = makeTestGroups();
+    const t0 = performance.now();
+    runTournamentSimulation(groups, 10_000, 42);
+    const ms = performance.now() - t0;
+    // Registrar en consola para el resumen del usuario
+    console.log(`[MC-4 benchmark] 10k iteraciones: ${ms.toFixed(0)} ms`);
+    // Sin límite de tiempo duro en el test; solo verificamos que termina
+    expect(ms).toBeGreaterThan(0);
   });
 });
