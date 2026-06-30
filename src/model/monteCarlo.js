@@ -8,13 +8,17 @@
  *   sampleMatch         — un resultado completo {gh, ga}
  *   simulateGroupMatch  — partido de grupos: usa resultado real si está disponible
  *   simulateGroup       — round-robin + desempate FIFA → clasificación [1º..4º]
- *   rankBestThirds      — top-8 de los 12 terceros (Pts→GD→GF→sorteo)
+ *   rankBestThirds          — top-8 de los 12 terceros (Pts→GD→GF→sorteo)
+ *   simulateKnockoutMatch   — partido eliminatorio: 90min → ET → penales
+ *   fillBracket             — crea los 31 KnockoutNodes desde el template
+ *   simulateBracket         — recorre R32→R16→QF→SF→F y devuelve el campeón
  *
  * Diseño documentado en docs/montecarlo.md.
  */
 
 import { formMultiplier, LEAGUE_AVG } from './dixonColes.js';
 import { HOST_CODES, HOME_ADV_ELO }   from './elo.js';
+import SHOOTOUT_RATES                  from '../data/shootoutRates.json';
 
 // ─── Constantes calibrables ──────────────────────────────────────
 /**
@@ -303,4 +307,163 @@ export function rankBestThirds(allGroupResults, rng) {
     (b.s.Pts - a.s.Pts) || (b.s.GD - a.s.GD) || (b.s.GF - a.s.GF) || (a.rk - b.rk)
   );
   return keyed.slice(0, 8).map(({ s }) => s);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MC-3 — Eliminatorias: bracket 31 nodos + partido ET/penales
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Modo de asignación de terceros a slots del bracket (decisión §14-1).
+ * 'ranking' = orden del ranking de `rankBestThirds` (T1=mejor, T8=peor).
+ * La tabla oficial FIFA (dependiente de qué grupos aportaron terceros)
+ * se incorpora en iteración posterior.
+ */
+export const THIRD_SLOT_MODE = 'ranking';
+
+/**
+ * Topología del bracket: 31 nodos (R32×16 + R16×8 + QF×4 + SF×2 + F×1).
+ *
+ * homeSlot / awaySlot en R32 referencian claves de `qualified`:
+ *   '1A'..'1L'  = primeros de grupo A..L
+ *   '2A'..'2L'  = segundos
+ *   'T1'..'T8'  = mejores terceros en orden de ranking
+ *
+ * ⚠️  Asignación de terceros APROXIMADA (THIRD_SLOT_MODE='ranking').
+ *     La tabla oficial FIFA depende de la combinación concreta de grupos
+ *     que aportaron terceros. Se marca en la salida con isApproximateThirdsMapping.
+ */
+const BRACKET_NODES = [
+  // ── R32 (16 partidos) ─────────────────────────────────────────
+  { id:'m32_01', round:'R32', homeSlot:'1A', awaySlot:'T1',  feedsInto:'m16_01', slot:'home' },
+  { id:'m32_02', round:'R32', homeSlot:'1B', awaySlot:'2A',  feedsInto:'m16_01', slot:'away' },
+  { id:'m32_03', round:'R32', homeSlot:'1C', awaySlot:'T2',  feedsInto:'m16_02', slot:'home' },
+  { id:'m32_04', round:'R32', homeSlot:'1D', awaySlot:'2C',  feedsInto:'m16_02', slot:'away' },
+  { id:'m32_05', round:'R32', homeSlot:'1E', awaySlot:'T3',  feedsInto:'m16_03', slot:'home' },
+  { id:'m32_06', round:'R32', homeSlot:'1F', awaySlot:'2E',  feedsInto:'m16_03', slot:'away' },
+  { id:'m32_07', round:'R32', homeSlot:'1G', awaySlot:'T4',  feedsInto:'m16_04', slot:'home' },
+  { id:'m32_08', round:'R32', homeSlot:'1H', awaySlot:'2G',  feedsInto:'m16_04', slot:'away' },
+  { id:'m32_09', round:'R32', homeSlot:'1I', awaySlot:'T5',  feedsInto:'m16_05', slot:'home' },
+  { id:'m32_10', round:'R32', homeSlot:'1J', awaySlot:'2I',  feedsInto:'m16_05', slot:'away' },
+  { id:'m32_11', round:'R32', homeSlot:'1K', awaySlot:'T6',  feedsInto:'m16_06', slot:'home' },
+  { id:'m32_12', round:'R32', homeSlot:'1L', awaySlot:'2K',  feedsInto:'m16_06', slot:'away' },
+  { id:'m32_13', round:'R32', homeSlot:'2B', awaySlot:'T7',  feedsInto:'m16_07', slot:'home' },
+  { id:'m32_14', round:'R32', homeSlot:'2D', awaySlot:'2F',  feedsInto:'m16_07', slot:'away' },
+  { id:'m32_15', round:'R32', homeSlot:'2H', awaySlot:'T8',  feedsInto:'m16_08', slot:'home' },
+  { id:'m32_16', round:'R32', homeSlot:'2J', awaySlot:'2L',  feedsInto:'m16_08', slot:'away' },
+  // ── R16 (8 partidos) ──────────────────────────────────────────
+  { id:'m16_01', round:'R16', homeSlot:null, awaySlot:null,  feedsInto:'mqf_01', slot:'home' },
+  { id:'m16_02', round:'R16', homeSlot:null, awaySlot:null,  feedsInto:'mqf_01', slot:'away' },
+  { id:'m16_03', round:'R16', homeSlot:null, awaySlot:null,  feedsInto:'mqf_02', slot:'home' },
+  { id:'m16_04', round:'R16', homeSlot:null, awaySlot:null,  feedsInto:'mqf_02', slot:'away' },
+  { id:'m16_05', round:'R16', homeSlot:null, awaySlot:null,  feedsInto:'mqf_03', slot:'home' },
+  { id:'m16_06', round:'R16', homeSlot:null, awaySlot:null,  feedsInto:'mqf_03', slot:'away' },
+  { id:'m16_07', round:'R16', homeSlot:null, awaySlot:null,  feedsInto:'mqf_04', slot:'home' },
+  { id:'m16_08', round:'R16', homeSlot:null, awaySlot:null,  feedsInto:'mqf_04', slot:'away' },
+  // ── QF (4 partidos) ───────────────────────────────────────────
+  { id:'mqf_01', round:'QF',  homeSlot:null, awaySlot:null,  feedsInto:'msf_01', slot:'home' },
+  { id:'mqf_02', round:'QF',  homeSlot:null, awaySlot:null,  feedsInto:'msf_01', slot:'away' },
+  { id:'mqf_03', round:'QF',  homeSlot:null, awaySlot:null,  feedsInto:'msf_02', slot:'home' },
+  { id:'mqf_04', round:'QF',  homeSlot:null, awaySlot:null,  feedsInto:'msf_02', slot:'away' },
+  // ── SF (2 partidos) ───────────────────────────────────────────
+  { id:'msf_01', round:'SF',  homeSlot:null, awaySlot:null,  feedsInto:'mf_01',  slot:'home' },
+  { id:'msf_02', round:'SF',  homeSlot:null, awaySlot:null,  feedsInto:'mf_01',  slot:'away' },
+  // ── Final ─────────────────────────────────────────────────────
+  { id:'mf_01',  round:'F',   homeSlot:null, awaySlot:null,  feedsInto:null,     slot:null   },
+];
+
+/**
+ * Simula un partido de eliminatoria con prórroga y penales si empata.
+ *
+ * Flujo: 90 min (Poisson λ completo)
+ *        → si empate: ET 30 min extra (λ × 30/90)
+ *        → si sigue empatado: penales con tasa histórica de shootoutRates.json
+ *
+ * @param {object}   home  TeamStrength local (necesita .code para shootout rates)
+ * @param {object}   away  TeamStrength visitante
+ * @param {Function} rng   PRNG de mulberry32
+ * @returns {{ gh:number, ga:number, winner:object, viaPenalties:boolean }}
+ */
+export function simulateKnockoutMatch(home, away, rng) {
+  const [lamH, lamA] = deriveLambdas(home, away, {});
+
+  // 90 minutos
+  let gh = samplePoisson(lamH, rng);
+  let ga = samplePoisson(lamA, rng);
+
+  // Prórroga (30 min, λ escalado ×30/90) — decisión §14-2
+  if (gh === ga) {
+    gh += samplePoisson(lamH * (30 / 90), rng);
+    ga += samplePoisson(lamA * (30 / 90), rng);
+  }
+
+  let winner;
+  let viaPenalties = false;
+
+  if      (gh > ga) { winner = home; }
+  else if (ga > gh) { winner = away; }
+  else {
+    // Penales: probabilidad proporcional a la tasa histórica
+    const rH   = SHOOTOUT_RATES[home.code]?.rate ?? 0.5;
+    const rA   = SHOOTOUT_RATES[away.code]?.rate ?? 0.5;
+    const norm = rH + rA;
+    const pHome = norm > 0 ? rH / norm : 0.5;
+    winner = rng() < pHome ? home : away;
+    viaPenalties = true;
+  }
+
+  return { gh, ga, winner, viaPenalties };
+}
+
+/**
+ * Instancia los 31 KnockoutNodes llenando los slots R32 desde `qualified`.
+ *
+ * @param {Record<string,object>} qualified
+ *   Objeto con claves '1A'..'1L', '2A'..'2L', 'T1'..'T8' → TeamStrength.
+ * @returns {KnockoutNode[]}  31 nodos; R16+ tienen home/away = null hasta su ronda.
+ */
+export function fillBracket(qualified) {
+  return BRACKET_NODES.map(tpl => ({
+    id:        tpl.id,
+    round:     tpl.round,
+    home:      tpl.homeSlot ? (qualified[tpl.homeSlot] ?? null) : null,
+    away:      tpl.awaySlot ? (qualified[tpl.awaySlot] ?? null) : null,
+    result:    null,
+    feedsInto: tpl.feedsInto,
+    slot:      tpl.slot,
+  }));
+}
+
+/**
+ * Recorre los 31 nodos del bracket en orden topológico (R32→R16→QF→SF→F),
+ * propagando ganadores y devolviendo el campeón + árbol completo.
+ *
+ * @param {Record<string,object>} qualified  Ver fillBracket.
+ * @param {Function}              rng
+ * @returns {{
+ *   nodes: KnockoutNode[],
+ *   champion: object|null,
+ *   isApproximateThirdsMapping: boolean
+ * }}
+ */
+export function simulateBracket(qualified, rng) {
+  const nodes = fillBracket(qualified);
+  const byId  = new Map(nodes.map(n => [n.id, n]));
+
+  for (const round of ['R32', 'R16', 'QF', 'SF', 'F']) {
+    for (const node of nodes) {
+      if (node.round !== round || !node.home || !node.away) continue;
+      const result = simulateKnockoutMatch(node.home, node.away, rng);
+      node.result  = result;
+      if (node.feedsInto) {
+        byId.get(node.feedsInto)[node.slot] = result.winner;
+      }
+    }
+  }
+
+  return {
+    nodes,
+    champion:                   byId.get('mf_01')?.result?.winner ?? null,
+    isApproximateThirdsMapping: true,
+  };
 }

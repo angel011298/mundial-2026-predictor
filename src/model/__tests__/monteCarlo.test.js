@@ -8,6 +8,10 @@ import {
   simulateGroupMatch,
   simulateGroup,
   rankBestThirds,
+  simulateKnockoutMatch,
+  fillBracket,
+  simulateBracket,
+  THIRD_SLOT_MODE,
   GAMMA,
 } from '../monteCarlo.js';
 import { LEAGUE_AVG } from '../dixonColes.js';
@@ -432,5 +436,278 @@ describe('rankBestThirds', () => {
     const r1 = rankBestThirds(groups, makeRng(77));
     const r2 = rankBestThirds(groups, makeRng(77));
     expect(r1.map(s => s.team.code)).toEqual(r2.map(s => s.team.code));
+  });
+});
+
+// ─── Helpers MC-3 ───────────────────────────────────────────────────
+/** Equipo mínimo para knockout: solo necesita deriveLambdas + penales. */
+function kTeam(code, overrides = {}) {
+  return {
+    code,
+    attack:  overrides.attack  ?? 1.0,
+    defense: overrides.defense ?? 1.0,
+    elo:     overrides.elo     ?? 1500,
+    form:    overrides.form    ?? '',
+  };
+}
+
+/**
+ * Crea el mapa `qualified` con 32 equipos mínimos para simulateBracket.
+ * Se puede pasar un objeto de overrides por clave (ej. { '1A': { attack: 3.0 } }).
+ */
+function makeQualified(overrides = {}) {
+  const groups = 'ABCDEFGHIJKL'.split('');
+  const q = {};
+  for (const g of groups) {
+    q[`1${g}`] = kTeam(`P1${g}`, overrides[`1${g}`] ?? {});
+    q[`2${g}`] = kTeam(`P2${g}`, overrides[`2${g}`] ?? {});
+  }
+  for (let i = 1; i <= 8; i++) {
+    q[`T${i}`] = kTeam(`T${i}`, overrides[`T${i}`] ?? {});
+  }
+  return q;
+}
+
+// ─── MC-3: simulateKnockoutMatch ────────────────────────────────────
+describe('simulateKnockoutMatch', () => {
+  test('devuelve la estructura correcta', () => {
+    const [A, B] = [kTeam('AAA'), kTeam('BBB')];
+    const res = simulateKnockoutMatch(A, B, makeRng(42));
+    expect(res).toHaveProperty('gh');
+    expect(res).toHaveProperty('ga');
+    expect(res).toHaveProperty('winner');
+    expect(res).toHaveProperty('viaPenalties');
+    expect(typeof res.gh).toBe('number');
+    expect(typeof res.ga).toBe('number');
+    expect(typeof res.viaPenalties).toBe('boolean');
+  });
+
+  test('winner es siempre home o away', () => {
+    const [A, B] = [kTeam('AAA'), kTeam('BBB')];
+    const rng = makeRng(7);
+    for (let i = 0; i < 50; i++) {
+      const { winner } = simulateKnockoutMatch(A, B, rng);
+      expect([A, B]).toContain(winner);
+    }
+  });
+
+  test('goles son enteros no negativos', () => {
+    const [A, B] = [kTeam('AAA'), kTeam('BBB')];
+    const rng = makeRng(13);
+    for (let i = 0; i < 50; i++) {
+      const { gh, ga } = simulateKnockoutMatch(A, B, rng);
+      expect(gh).toBeGreaterThanOrEqual(0);
+      expect(ga).toBeGreaterThanOrEqual(0);
+      expect(Number.isInteger(gh)).toBe(true);
+      expect(Number.isInteger(ga)).toBe(true);
+    }
+  });
+
+  test('determinista: misma seed → mismo resultado', () => {
+    const [A, B] = [kTeam('XXX'), kTeam('YYY')];
+    const r1 = simulateKnockoutMatch(A, B, makeRng(55));
+    const r2 = simulateKnockoutMatch(A, B, makeRng(55));
+    expect(r1.gh).toBe(r2.gh);
+    expect(r1.ga).toBe(r2.ga);
+    expect(r1.winner).toBe(r2.winner === r1.winner ? r1.winner : r2.winner);
+    expect(r1.viaPenalties).toBe(r2.viaPenalties);
+  });
+
+  test('equipo mucho más fuerte gana la mayoría de partidos', () => {
+    const strong = kTeam('STR', { attack: 4.0, elo: 2100 });
+    const weak   = kTeam('WEK', { attack: 0.3, elo: 900  });
+    const rng = makeRng(42);
+    let strongWins = 0;
+    for (let i = 0; i < 200; i++) {
+      const { winner } = simulateKnockoutMatch(strong, weak, rng);
+      if (winner === strong) strongWins++;
+    }
+    expect(strongWins).toBeGreaterThan(150); // >75%
+  });
+
+  test('penales ocurren estadísticamente con equipos iguales', () => {
+    const [A, B] = [kTeam('AAA'), kTeam('BBB')];
+    const rng = makeRng(99);
+    let penCount = 0;
+    for (let i = 0; i < 500; i++) {
+      const { viaPenalties } = simulateKnockoutMatch(A, B, rng);
+      if (viaPenalties) penCount++;
+    }
+    // Con λ~1.32 y ET, la tasa real debería ser ~5-15%
+    expect(penCount).toBeGreaterThan(5);
+    expect(penCount).toBeLessThan(100);
+  });
+
+  test('si NO hay empate → viaPenalties=false', () => {
+    // Con ataque alto el marcador suele ser distinto; buscamos un caso determinado
+    const strong = kTeam('STR', { attack: 5.0, elo: 2000 });
+    const weak   = kTeam('WEK', { attack: 0.2, elo: 1000 });
+    const rng = makeRng(1);
+    // Primeros 20 resultados: al menos uno no termina en penales
+    let nonPenFound = false;
+    for (let i = 0; i < 20; i++) {
+      if (!simulateKnockoutMatch(strong, weak, rng).viaPenalties) {
+        nonPenFound = true;
+        break;
+      }
+    }
+    expect(nonPenFound).toBe(true);
+  });
+
+  test('fallback 0.5 si el code no está en shootoutRates', () => {
+    // Con un código desconocido pHome=0.5; ejecutar 200 partidos que terminen
+    // en penales y verificar que ambos ganan ~mitad
+    const A = kTeam('ZZZ'); // no existe en shootoutRates
+    const B = kTeam('QQQ'); // no existe en shootoutRates
+    const rng = makeRng(42);
+    let aWins = 0, totalPen = 0;
+    for (let i = 0; i < 2000; i++) {
+      const res = simulateKnockoutMatch(A, B, rng);
+      if (res.viaPenalties) {
+        totalPen++;
+        if (res.winner === A) aWins++;
+      }
+    }
+    // Con pHome=0.5, A gana entre 35-65% de las veces en penales
+    if (totalPen > 10) {
+      const ratio = aWins / totalPen;
+      expect(ratio).toBeGreaterThan(0.30);
+      expect(ratio).toBeLessThan(0.70);
+    }
+  });
+
+  // Mini-bracket de 4 equipos de juguete (SF + Final)
+  test('mini-bracket juguete: 4 equipos, 3 partidos → campeón válido', () => {
+    const [T1, T2, T3, T4] = ['AAA','BBB','CCC','DDD'].map(c => kTeam(c));
+    const rng = makeRng(42);
+    const sf1   = simulateKnockoutMatch(T1, T2, rng);
+    const sf2   = simulateKnockoutMatch(T3, T4, rng);
+    const final = simulateKnockoutMatch(sf1.winner, sf2.winner, rng);
+
+    expect([T1, T2]).toContain(sf1.winner);
+    expect([T3, T4]).toContain(sf2.winner);
+    expect([T1, T2, T3, T4]).toContain(final.winner);
+    expect(typeof final.viaPenalties).toBe('boolean');
+  });
+});
+
+// ─── MC-3: fillBracket ──────────────────────────────────────────────
+describe('fillBracket', () => {
+  test('devuelve exactamente 31 nodos', () => {
+    const nodes = fillBracket(makeQualified());
+    expect(nodes).toHaveLength(31);
+  });
+
+  test('todos los ids son únicos', () => {
+    const nodes = fillBracket(makeQualified());
+    const ids = nodes.map(n => n.id);
+    expect(new Set(ids).size).toBe(31);
+  });
+
+  test('nodos R32 tienen home y away rellenados', () => {
+    const q = makeQualified();
+    const nodes = fillBracket(q);
+    const r32 = nodes.filter(n => n.round === 'R32');
+    expect(r32).toHaveLength(16);
+    for (const n of r32) {
+      expect(n.home).not.toBeNull();
+      expect(n.away).not.toBeNull();
+    }
+  });
+
+  test('nodos R16+ empiezan con home=null y away=null', () => {
+    const nodes = fillBracket(makeQualified());
+    const later = nodes.filter(n => n.round !== 'R32');
+    for (const n of later) {
+      expect(n.home).toBeNull();
+      expect(n.away).toBeNull();
+    }
+  });
+
+  test('nodos R32: cada equipo aparece exactamente una vez', () => {
+    const q = makeQualified();
+    const nodes = fillBracket(q);
+    const r32 = nodes.filter(n => n.round === 'R32');
+    const seen = new Set();
+    for (const n of r32) {
+      expect(seen.has(n.home.code)).toBe(false);
+      expect(seen.has(n.away.code)).toBe(false);
+      seen.add(n.home.code);
+      seen.add(n.away.code);
+    }
+    expect(seen.size).toBe(32);
+  });
+
+  test('slot del final es null (sin feedsInto)', () => {
+    const nodes = fillBracket(makeQualified());
+    const fin   = nodes.find(n => n.round === 'F');
+    expect(fin).toBeDefined();
+    expect(fin.feedsInto).toBeNull();
+    expect(fin.slot).toBeNull();
+  });
+});
+
+// ─── MC-3: simulateBracket ──────────────────────────────────────────
+describe('simulateBracket', () => {
+  test('devuelve campeón no nulo y 31 nodos', () => {
+    const result = simulateBracket(makeQualified(), makeRng(42));
+    expect(result.champion).not.toBeNull();
+    expect(result.nodes).toHaveLength(31);
+  });
+
+  test('campeón es uno de los 32 equipos clasificados', () => {
+    const q = makeQualified();
+    const allCodes = new Set(Object.values(q).map(t => t.code));
+    const { champion } = simulateBracket(q, makeRng(42));
+    expect(allCodes.has(champion.code)).toBe(true);
+  });
+
+  test('isApproximateThirdsMapping siempre es true', () => {
+    const { isApproximateThirdsMapping } = simulateBracket(makeQualified(), makeRng(1));
+    expect(isApproximateThirdsMapping).toBe(true);
+  });
+
+  test('THIRD_SLOT_MODE exportado es "ranking"', () => {
+    expect(THIRD_SLOT_MODE).toBe('ranking');
+  });
+
+  test('determinista: misma seed → mismo campeón', () => {
+    const q = makeQualified();
+    const r1 = simulateBracket(q, makeRng(7));
+    const r2 = simulateBracket(q, makeRng(7));
+    expect(r1.champion.code).toBe(r2.champion.code);
+  });
+
+  test('seed distinta puede dar campeón distinto', () => {
+    const q = makeQualified();
+    const codes = new Set(
+      Array.from({ length: 30 }, (_, i) =>
+        simulateBracket(q, makeRng(i)).champion.code
+      )
+    );
+    // Con 30 seeds distintas deben aparecer al menos 2 campeones distintos
+    expect(codes.size).toBeGreaterThan(1);
+  });
+
+  test('todos los nodos del final tienen resultado', () => {
+    const q = makeQualified();
+    const { nodes } = simulateBracket(q, makeRng(42));
+    for (const n of nodes) {
+      // Todos los nodos deberían tener resultado (home y away nunca son null en un bracket completo)
+      expect(n.result).not.toBeNull();
+    }
+  });
+
+  test('equipo dominante gana el bracket con alta frecuencia', () => {
+    const STRONG = '1A';
+    const q = makeQualified({ [STRONG]: { attack: 5.0, defense: 0.3, elo: 2200 } });
+    const strongCode = q[STRONG].code;
+    let wins = 0;
+    for (let i = 0; i < 100; i++) {
+      const { champion } = simulateBracket(q, makeRng(i * 13 + 7));
+      if (champion.code === strongCode) wins++;
+    }
+    // El equipo dominante debe ganar bastante más que 1/32 ≈ 3%
+    expect(wins).toBeGreaterThan(15);
   });
 });
