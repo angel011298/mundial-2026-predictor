@@ -3,6 +3,7 @@ const TABS = [
   { id: 'standings', label: 'Grupos',    emoji: '📊' },
   { id: 'bracket',  label: 'Bracket',   emoji: '🏆' },
   { id: 'picks',    label: 'Mis Picks', emoji: '📈' },
+  { id: 'simulator', label: 'Simular',  emoji: '🎲' },
 ];
 
 export default function ViewTabs({ active, onChange }) {

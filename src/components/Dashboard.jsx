@@ -13,9 +13,12 @@ import TeamProfileModal from './TeamProfileModal.jsx';
 import ModelScorecard from './ModelScorecard.jsx';
 import BankrollTracker from './BankrollTracker.jsx';
 import { useModelScorecard } from '../hooks/useModelScorecard.js';
+import SimulatorView from './SimulatorView.jsx';
+import MatchAnalysis from './MatchAnalysis.jsx';
 
-const INTERVAL_LIVE = 45;
-const INTERVAL_IDLE = 90;
+const INTERVAL_LIVE  = 30;   // segundos — partidos en vivo
+const INTERVAL_IDLE  = 60;   // segundos — sin partidos en vivo
+const INTERVAL_ERROR = 20;   // segundos — reintento tras error de red
 
 const VALID_STATUSES = new Set(['all', 'live', 'upcoming', 'finished']);
 
@@ -45,7 +48,8 @@ export default function Dashboard() {
   const [error, setError]       = useState(null);
   const [countdown, setCountdown] = useState(null);
   const [activeView, setActiveView] = useState('matches');
-  const [teamProfile, setTeamProfile] = useState(null); // { team, match }
+  const [teamProfile,   setTeamProfile]   = useState(null); // { team, match }
+  const [matchAnalysis, setMatchAnalysis] = useState(null); // match object
   const scorecard = useModelScorecard(matches);
 
   // ── Filters — initialized from URL ────────────────────────────────
@@ -75,9 +79,14 @@ export default function Dashboard() {
     } catch {}
   }, []);
 
-  const providerInfo  = useMemo(() => getProviderInfo(), []);
-  const autoTimerRef  = useRef(null);
-  const countdownRef  = useRef(null);
+  const providerInfo = useMemo(() => getProviderInfo(), []);
+  const autoTimerRef = useRef(null);
+
+  // Refs para uso en event handlers sin cerrar sobre state obsoleto
+  const nextAtRef    = useRef(null);   // timestamp absoluto del próximo refresh
+  const lastSyncRef  = useRef(null);   // cuándo fue el último refresh exitoso/fallido
+  const matchesRef   = useRef([]);     // copia de matches para closures
+  const errorRef     = useRef(false);  // ¿el último refresh falló?
 
   // ── Fetch ──────────────────────────────────────────────────────────
   const refresh = useCallback(async (silent = false) => {
@@ -86,41 +95,69 @@ export default function Dashboard() {
     try {
       const data = await getLiveMatches();
       setMatches(data);
-      setLastSync(Date.now());
+      matchesRef.current = data;
+      errorRef.current   = false;
+      const now = Date.now();
+      setLastSync(now);
+      lastSyncRef.current = now;
       if (!silent) toast(`${data.length} partidos sincronizados`, 'success');
     } catch (err) {
       setError('No se pudieron obtener los datos. Intenta de nuevo.');
+      errorRef.current = true;
       toast('Error al sincronizar datos', 'error');
       console.error(err);
+      // Actualizar lastSync incluso en error para que scheduleAutoRefresh
+      // se dispare y mantenga el ciclo de reintento permanente.
+      const now = Date.now();
+      setLastSync(now);
+      lastSyncRef.current = now;
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
 
-  // ── Auto-refresh ───────────────────────────────────────────────────
+  // ── Auto-refresh — basado en timestamp absoluto (no se desfasa con throttling) ──
   const scheduleAutoRefresh = useCallback((hasLive) => {
     clearTimeout(autoTimerRef.current);
-    clearInterval(countdownRef.current);
-    const interval = hasLive ? INTERVAL_LIVE : INTERVAL_IDLE;
-    let remaining = interval;
-    setCountdown(remaining);
-    countdownRef.current = setInterval(() => {
-      remaining -= 1;
-      setCountdown(remaining);
-      if (remaining <= 0) clearInterval(countdownRef.current);
-    }, 1000);
-    autoTimerRef.current = setTimeout(() => refresh(true), interval * 1000);
+    const secs = errorRef.current ? INTERVAL_ERROR : hasLive ? INTERVAL_LIVE : INTERVAL_IDLE;
+    nextAtRef.current = Date.now() + secs * 1000;
+    autoTimerRef.current = setTimeout(() => refresh(true), secs * 1000);
   }, [refresh]);
 
+  // Countdown: tick cada 500 ms calculado desde nextAtRef (preciso aunque el tab esté en segundo plano)
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (!nextAtRef.current) { setCountdown(null); return; }
+      setCountdown(Math.max(0, Math.ceil((nextAtRef.current - Date.now()) / 1000)));
+    }, 500);
+    return () => clearInterval(id);
+  }, []);
+
+  // Disparar scheduleAutoRefresh cuando cambia lastSync (tanto éxito como error)
   useEffect(() => {
     if (lastSync === null) return;
     const hasLive = matches.some((m) => m.status === 'live');
     scheduleAutoRefresh(hasLive);
-    return () => {
-      clearTimeout(autoTimerRef.current);
-      clearInterval(countdownRef.current);
-    };
+    return () => clearTimeout(autoTimerRef.current);
   }, [lastSync, matches, scheduleAutoRefresh]);
+
+  // Refresh inmediato al volver la pestaña al primer plano o recuperar conexión
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const age   = lastSyncRef.current ? (Date.now() - lastSyncRef.current) / 1000 : Infinity;
+      const live  = matchesRef.current.some((m) => m.status === 'live');
+      const limit = errorRef.current ? INTERVAL_ERROR : live ? INTERVAL_LIVE : INTERVAL_IDLE;
+      if (age >= limit) refresh(true);
+    };
+    const onOnline = () => refresh(true);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onOnline);
+    };
+  }, [refresh]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -201,7 +238,12 @@ export default function Dashboard() {
                 aria-busy={isLoading}
               >
                 {filtered.map((m) => (
-                  <MatchCard key={m.id} match={m} onTeamClick={setTeamProfile} />
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    onTeamClick={setTeamProfile}
+                    onAnalyze={setMatchAnalysis}
+                  />
                 ))}
               </section>
             )}
@@ -226,6 +268,14 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Match Analysis Modal */}
+        {matchAnalysis && (
+          <MatchAnalysis
+            match={matchAnalysis}
+            onClose={() => setMatchAnalysis(null)}
+          />
+        )}
+
         {/* Team Profile Modal */}
         {teamProfile && (
           <TeamProfileModal
@@ -234,6 +284,13 @@ export default function Dashboard() {
             matches={matches}
             onClose={() => setTeamProfile(null)}
           />
+        )}
+
+        {/* Vista: Simulador Monte Carlo */}
+        {activeView === 'simulator' && (
+          <div id="panel-simulator" role="tabpanel">
+            <SimulatorView />
+          </div>
         )}
 
         {/* Vista: Mis Picks */}

@@ -1,5 +1,5 @@
 import { useMemo, useState, useId } from 'react';
-import { TrendingUp, Target, Wallet, ChevronDown, Clock, Database, Info, Check } from 'lucide-react';
+import { TrendingUp, Target, Wallet, ChevronDown, Clock, Database, Info, Check, BarChart2 } from 'lucide-react';
 import { analyzeMatch } from '../utils/adviceEngine.js';
 import { formatTime, toneClasses } from '../utils/format.js';
 import { useBetSlip } from '../context/BetSlipContext.jsx';
@@ -167,7 +167,7 @@ function OddsSection({ home, away, odds, pickKey, match, analysis }) {
 
 // ─── Componente principal ─────────────────────────────────────────
 
-export default function MatchCard({ match, onTeamClick }) {
+export default function MatchCard({ match, onTeamClick, onAnalyze }) {
   const uid = useId();
   const [open, setOpen] = useState(false);
   const analysis = useMemo(() => analyzeMatch(match), [match]);
@@ -290,21 +290,35 @@ export default function MatchCard({ match, onTeamClick }) {
             </div>
           </div>
 
-          {/* Toggle */}
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls={detailId}
-            className="mt-3 flex w-full items-center justify-center gap-1 text-[11px] font-semibold text-zinc-500 transition-colors hover:text-zinc-300"
-          >
-            {open ? 'Ocultar detalles' : 'Ver análisis detallado'}
-            <ChevronDown
-              size={13}
-              aria-hidden="true"
-              className={`transition-transform ${open ? 'rotate-180' : ''}`}
-            />
-          </button>
+          {/* Toggle + botón Heatmap */}
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls={detailId}
+              className="flex flex-1 items-center justify-center gap-1 text-[11px] font-semibold text-zinc-500 transition-colors hover:text-zinc-300"
+            >
+              {open ? 'Ocultar detalles' : 'Ver análisis detallado'}
+              <ChevronDown
+                size={13}
+                aria-hidden="true"
+                className={`transition-transform ${open ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {onAnalyze && (
+              <button
+                type="button"
+                onClick={() => onAnalyze(match)}
+                aria-label={`Análisis de marcadores: ${home.name} vs ${away.name}`}
+                className="flex shrink-0 items-center gap-1 text-[11px] font-bold
+                           text-brand-violet-soft transition-colors hover:text-brand-violet"
+              >
+                <BarChart2 size={12} aria-hidden="true" />
+                Heatmap
+              </button>
+            )}
+          </div>
 
           {/* Panel expandible */}
           {open && (
