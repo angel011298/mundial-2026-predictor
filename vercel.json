@@ -5,23 +5,5 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron/refresh-schedule",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-elo",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-meta",
-      "schedule": "0 */4 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-odds",
-      "schedule": "0 */12 * * *"
-    }
   ]
 }
