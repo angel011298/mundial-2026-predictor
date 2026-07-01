@@ -38,8 +38,18 @@ function injectSwVersion() {
   };
 }
 
+// Sello de compilación visible en la UI (footer) — permite confirmar de un
+// vistazo qué versión está sirviendo producción y detectar caché obsoleta.
+const BUILD_STAMP = new Date().toLocaleString('es-MX', {
+  timeZone: 'America/Mexico_City',
+  day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+});
+
 export default defineConfig({
   plugins: [react(), injectSwVersion()],
+  define: {
+    __BUILD_STAMP__: JSON.stringify(BUILD_STAMP),
+  },
   build: {
     target: 'es2020',
     outDir: 'dist',

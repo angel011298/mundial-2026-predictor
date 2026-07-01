@@ -4,6 +4,7 @@ import { exportAnalysis } from '../utils/exportAnalysis.js';
 import { dixonColesProbs, poisson } from '../model/dixonColes.js';
 import { analyzeMatch } from '../utils/adviceEngine.js';
 import crosswalk from '../data/team-crosswalk.json';
+import { stageLabel, isKnockout } from '../utils/format.js';
 import ScorelineHeatmap from './ScorelineHeatmap.jsx';
 import OutcomeBars from './OutcomeBars.jsx';
 import TopScorelines from './TopScorelines.jsx';
@@ -226,6 +227,11 @@ export default function MatchAnalysis({ match, onClose }) {
             <span className="text-xs text-zinc-600">vs</span>
             <span className="text-sm font-black text-zinc-100">{away.code}</span>
             <span className="text-xl leading-none" role="img" aria-hidden="true">{away.flag}</span>
+            <span className={`chip ml-1 shrink-0 ${isKnockout(match.stage)
+              ? 'border border-amber-500/30 bg-amber-500/15 text-amber-300'
+              : 'bg-zinc-800/60 text-zinc-400'}`}>
+              {stageLabel(match.stage, match.group)}
+            </span>
           </div>
           <div className="ml-2 flex shrink-0 items-center gap-1">
             <button

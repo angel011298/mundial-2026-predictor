@@ -186,12 +186,16 @@ function normalizeESPNEvent(ev) {
 
   const group = extractGroupFromESPN(ev, comp) ?? homeTeam.group ?? null;
 
+  // Fase del torneo: ESPN la expone en ev.season.slug
+  // (group-stage, round-of-32, round-of-16, quarterfinals, semifinals, 3rd-place, final)
+  const stage = ev.season?.slug ?? comp?.status?.type?.slug ?? 'group';
+
   const odds = buildOdds(homeTeam, awayTeam);
 
   return {
     id:        String(ev.id),
     sourceIds: { espn: String(ev.id) },
-    stage:     'group',
+    stage,
     group,
     matchday:  null,
     status,
@@ -430,6 +434,8 @@ function overlayESPN(matches, espnEvents) {
       sourceIds: { ...m.sourceIds, espn: live.id },
       status:    live.status,
       minute:    live.minute,
+      // La fase real de ESPN manda sobre la fase seedeada del calendario base
+      stage:     live.stage && live.stage !== 'group' ? live.stage : m.stage,
       group:     live.group ?? m.group,
       score:     live.score,
       home:      { ...m.home, score: live.home.score },

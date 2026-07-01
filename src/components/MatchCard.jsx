@@ -1,7 +1,7 @@
 import { useMemo, useState, useId } from 'react';
 import { TrendingUp, Target, Wallet, ChevronDown, Clock, Database, Info, Check, BarChart2 } from 'lucide-react';
 import { analyzeMatch } from '../utils/adviceEngine.js';
-import { formatTime, toneClasses } from '../utils/format.js';
+import { formatTime, toneClasses, stageLabel, isKnockout } from '../utils/format.js';
 import { useBetSlip } from '../context/BetSlipContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import ProbabilityBar from './ProbabilityBar.jsx';
@@ -172,20 +172,26 @@ export default function MatchCard({ match, onTeamClick, onAnalyze }) {
   const [open, setOpen] = useState(false);
   const analysis = useMemo(() => analyzeMatch(match), [match]);
 
-  const { home, away, odds, status, group, dataSource } = match;
+  const { home, away, odds, status, group, dataSource, stage } = match;
   const showScore = status === 'live' || status === 'finished';
   const bestValue = analysis?.value?.bestValue;
   const detailId  = `${uid}-detail`;
+  const phaseText = stageLabel(stage, group);
+  const knockout  = isKnockout(stage);
 
   return (
     <article
       className="card animate-fade-up overflow-hidden p-4 shadow-glow"
-      aria-label={`Partido: ${home.name} vs ${away.name}, Grupo ${group}`}
+      aria-label={`Partido: ${home.name} vs ${away.name}, ${phaseText}`}
     >
       {/* Cabecera */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="chip bg-zinc-800/60 text-zinc-400">Grupo {group}</span>
+          <span className={`chip ${knockout
+            ? 'border border-amber-500/30 bg-amber-500/15 text-amber-300'
+            : 'bg-zinc-800/60 text-zinc-400'}`}>
+            {knockout && <span aria-hidden="true">🏆 </span>}{phaseText}
+          </span>
           {bestValue && (
             <span className="chip border border-emerald-500/30 bg-emerald-500/15 text-[10px] text-emerald-400">
               ⚡ Value +{bestValue.ev.toFixed(1)}%

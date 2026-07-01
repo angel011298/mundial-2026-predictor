@@ -23,6 +23,39 @@ export function timeAgo(date) {
   return `hace ${hours} h`;
 }
 
+/** Mapa slug de fase (ESPN season.slug o stage interno) → etiqueta en español. */
+const STAGE_LABELS = {
+  'group':          'Fase de grupos',
+  'group-stage':    'Fase de grupos',
+  'round-of-32':    'Dieciseisavos',
+  'round-of-16':    'Octavos de final',
+  'quarterfinals':  'Cuartos de final',
+  'quarterfinal':   'Cuartos de final',
+  'semifinals':     'Semifinal',
+  'semifinal':      'Semifinal',
+  '3rd-place':      'Tercer puesto',
+  'third-place':    'Tercer puesto',
+  'final':          'Final',
+};
+
+/**
+ * Etiqueta legible de la fase del torneo.
+ * En fase de grupos usa "Grupo X"; en eliminatorias usa el nombre de la ronda.
+ */
+export function stageLabel(stage, group) {
+  const s = (stage ?? '').toLowerCase();
+  if (!s || s === 'group' || s === 'group-stage') {
+    return group && group !== '—' ? `Grupo ${group}` : 'Fase de grupos';
+  }
+  return STAGE_LABELS[s] ?? stage;
+}
+
+/** ¿La fase es eliminatoria (no fase de grupos)? */
+export function isKnockout(stage) {
+  const s = (stage ?? '').toLowerCase();
+  return Boolean(s) && s !== 'group' && s !== 'group-stage';
+}
+
 /** Clases de Tailwind por "tono" semántico (centraliza la paleta). */
 export const toneClasses = {
   emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',

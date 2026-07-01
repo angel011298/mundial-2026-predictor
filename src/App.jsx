@@ -21,6 +21,9 @@ export default function App() {
                 que puedas permitirte perder. Si el juego deja de ser entretenimiento, buscá ayuda.
               </p>
             </div>
+            <p className="mt-2 text-center text-[10px] text-zinc-700 tabular-nums">
+              build {typeof __BUILD_STAMP__ !== 'undefined' ? __BUILD_STAMP__ : 'dev'}
+            </p>
           </footer>
 
           <BetSlip />
