@@ -1,10 +1,14 @@
 /** Utilidades de formato para la UI. */
 
-/** Hora local corta, ej. "18:30". */
+/** Zona horaria fija del torneo: Ciudad de México (independiente del dispositivo del visitante). */
+export const TOURNAMENT_TZ = 'America/Mexico_City';
+
+/** Hora en horario de Ciudad de México, ej. "18:30". */
 export function formatTime(date) {
   return new Date(date).toLocaleTimeString('es-MX', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: TOURNAMENT_TZ,
   });
 }
 
