@@ -41,7 +41,7 @@ function relTime(ts) {
   const diff = Math.round((Date.now() - ts) / 60_000);
   if (diff < 1)  return 'hace un momento';
   if (diff < 60) return `hace ${diff} min`;
-  return new Date(ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City' });
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
