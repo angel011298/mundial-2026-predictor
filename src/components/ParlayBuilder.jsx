@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { AlertTriangle, Zap, TrendingUp, Wallet } from 'lucide-react';
+import { AlertTriangle, Zap, TrendingUp, Wallet, Check, X } from 'lucide-react';
 import { buildParlay } from '../model/parlay.js';
 import { recommendedStake } from '../model/kelly.js';
 import { toneClasses } from '../utils/format.js';
@@ -75,9 +75,9 @@ export default function ParlayBuilder({ legs, bankroll }) {
         </div>
         {parlay.recommendation && (
           <span className={`chip border text-[10px] ${toneClasses[parlay.recommendation.tone] ?? toneClasses.muted}`}>
-            {parlay.recommendation.level === 'ok'      && '✓ Con valor'}
-            {parlay.recommendation.level === 'caution' && '⚠ Alta varianza'}
-            {parlay.recommendation.level === 'avoid'   && '✕ Evitar'}
+            {parlay.recommendation.level === 'ok'      && <><Check size={10} aria-hidden="true" /> Con valor</>}
+            {parlay.recommendation.level === 'caution' && <><AlertTriangle size={10} aria-hidden="true" /> Alta varianza</>}
+            {parlay.recommendation.level === 'avoid'   && <><X size={10} aria-hidden="true" /> Evitar</>}
           </span>
         )}
       </div>

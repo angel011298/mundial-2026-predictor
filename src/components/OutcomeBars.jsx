@@ -8,6 +8,7 @@ export default function OutcomeBars({ probs, home, away, loading = false }) {
       key:       'home',
       label:     home?.name ?? 'Local',
       code:      home?.code ?? '1',
+      flag:      home?.flag,
       value:     probs?.home ?? 0,
       barColor:  'bg-emerald-500',
       textColor: 'text-emerald-300',
@@ -16,6 +17,7 @@ export default function OutcomeBars({ probs, home, away, loading = false }) {
       key:       'draw',
       label:     'Empate',
       code:      'X',
+      flag:      null,
       value:     probs?.draw ?? 0,
       barColor:  'bg-zinc-500',
       textColor: 'text-zinc-300',
@@ -24,6 +26,7 @@ export default function OutcomeBars({ probs, home, away, loading = false }) {
       key:       'away',
       label:     away?.name ?? 'Visitante',
       code:      away?.code ?? '2',
+      flag:      away?.flag,
       value:     probs?.away ?? 0,
       barColor:  'bg-violet-500',
       textColor: 'text-violet-300',
@@ -41,8 +44,9 @@ export default function OutcomeBars({ probs, home, away, loading = false }) {
             className="flex items-center gap-3"
             aria-label={`${s.label}: ${pct.toFixed(1)}%`}
           >
-            {/* Código / etiqueta */}
-            <span className="w-10 shrink-0 text-right text-[11px] font-bold text-zinc-400 tabular-nums">
+            {/* Bandera + código */}
+            <span className="flex w-12 shrink-0 items-center justify-end gap-1 text-right text-[11px] font-bold text-zinc-400 tabular-nums">
+              {s.flag && <span aria-hidden="true">{s.flag}</span>}
               {s.code}
             </span>
 

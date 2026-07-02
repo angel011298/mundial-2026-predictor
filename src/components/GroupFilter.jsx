@@ -1,8 +1,10 @@
+import { Radio } from 'lucide-react';
+
 const STATUS_TABS = [
-  { key: 'all',      label: 'Todos'         },
-  { key: 'live',     label: '🔴 En vivo'    },
-  { key: 'upcoming', label: 'Próximos'      },
-  { key: 'finished', label: 'Finalizados'   },
+  { key: 'all',      label: 'Todos'       },
+  { key: 'live',     label: 'En vivo', live: true },
+  { key: 'upcoming', label: 'Próximos'    },
+  { key: 'finished', label: 'Finalizados' },
 ];
 
 export default function GroupFilter({
@@ -34,6 +36,7 @@ export default function GroupFilter({
                   : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200'
               }`}
             >
+              {tab.live && <Radio size={11} className={active ? 'text-rose-400' : 'text-zinc-600'} aria-hidden="true" />}
               {tab.label}
             </button>
           );

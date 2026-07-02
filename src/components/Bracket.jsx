@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStandings } from '../hooks/useStandings.js';
-import { Trophy, ChevronRight } from 'lucide-react';
+import { Trophy, ChevronRight, CircleHelp } from 'lucide-react';
 
 // Simplified 2026 WC R32 bracket structure
 // 12 groups → top 2 (24) + 8 best 3rd = 32 teams → 16 R32 matches
@@ -33,11 +33,11 @@ const TBD_ROUNDS = [
 const ROUNDS = ['R32', 'R16', 'QF', 'SF', 'Final'];
 
 function resolveSlot(slot, standings) {
-  if (slot.label) return { name: slot.label, flag: '❓', tbd: true };
+  if (slot.label) return { name: slot.label, flag: null, tbd: true };
   const group = standings[slot.g];
-  if (!group) return { name: `1° Grupo ${slot.g}`, flag: '—', tbd: true };
+  if (!group) return { name: `1° Grupo ${slot.g}`, flag: null, tbd: true };
   const team = group[slot.p - 1];
-  if (!team) return { name: `${slot.p}° Grupo ${slot.g}`, flag: '—', tbd: true };
+  if (!team) return { name: `${slot.p}° Grupo ${slot.g}`, flag: null, tbd: true };
   const isGroupComplete = group.every((t) => t.P >= 2);
   return { ...team, tbd: !isGroupComplete };
 }
@@ -46,7 +46,9 @@ function BracketSlot({ slot, standings }) {
   const team = resolveSlot(slot, standings);
   return (
     <div className={`flex items-center gap-1.5 ${team.tbd ? 'opacity-50' : ''}`}>
-      <span className="text-base leading-none" role="img" aria-label={team.name}>{team.flag}</span>
+      {team.flag
+        ? <span className="text-base leading-none" role="img" aria-label={team.name}>{team.flag}</span>
+        : <CircleHelp size={14} className="shrink-0 text-zinc-600" aria-hidden="true" />}
       <span className="text-xs font-semibold text-zinc-200 truncate max-w-[90px]">{team.name}</span>
     </div>
   );

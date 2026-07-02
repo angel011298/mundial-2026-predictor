@@ -1,6 +1,11 @@
 import { useState } from 'react';
+import { X } from 'lucide-react';
 
 const MAX_G = 6; // goles 0-5 en pantalla
+
+// Path de una estrella de 5 puntas centrada en (0,0), ~8 unidades de diámetro.
+// Vectorial propio en vez del glyph ★ (evita depender de la fuente de emoji del SO).
+const STAR_PATH = 'M0,-4 L0.94,-1.29 L3.8,-1.24 L1.52,0.49 L2.35,3.24 L0,1.6 L-2.35,3.24 L-1.52,0.49 L-3.8,-1.24 L-0.94,-1.29 Z';
 
 // Zinc-900 → Emerald interpolation (igual que GoalMatrix.jsx)
 function cellBg(t) {
@@ -110,10 +115,7 @@ export default function ScorelineHeatmap({ matrix, home, away, topH, topA, lambd
                     strokeWidth={isTop || isSel ? 1.5 : 0.5}
                   />
                   {isTop && (
-                    <text
-                      x={x + CW / 2} y={y + 9}
-                      textAnchor="middle" fill="#f59e0b" fontSize="7"
-                    >★</text>
+                    <path d={STAR_PATH} fill="#f59e0b" transform={`translate(${x + CW / 2},${y + 6}) scale(0.85)`} />
                   )}
                   {pctTxt && (
                     <text
@@ -131,8 +133,9 @@ export default function ScorelineHeatmap({ matrix, home, away, topH, topA, lambd
           )}
 
           {/* Pie de leyenda */}
-          <text x={ML} y={SVG_H - 3} fill="#52525b" fontSize="7">
-            ★ Más probable: {topH}-{topA}
+          <path d={STAR_PATH} fill="#f59e0b" transform={`translate(${ML + 3},${SVG_H - 6}) scale(0.55)`} />
+          <text x={ML + 9} y={SVG_H - 3} fill="#52525b" fontSize="7">
+            Más probable: {topH}-{topA}
           </text>
           {lambdaH != null && lambdaA != null && (
             <text x={SVG_W - 2} y={SVG_H - 3} textAnchor="end" fill="#3f3f46" fontSize="7">
@@ -166,9 +169,9 @@ export default function ScorelineHeatmap({ matrix, home, away, topH, topA, lambd
           <button
             onClick={() => setSel(null)}
             aria-label="Cerrar detalle"
-            className="text-xs text-zinc-700 hover:text-zinc-400 transition-colors"
+            className="text-zinc-700 hover:text-zinc-400 transition-colors"
           >
-            ✕
+            <X size={13} aria-hidden="true" />
           </button>
         </div>
       )}

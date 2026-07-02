@@ -38,6 +38,8 @@ export function useModelScorecard(matches) {
           group:     m.group,
           homeTeam:  m.home.name,
           awayTeam:  m.away.name,
+          homeFlag:  m.home.flag,
+          awayFlag:  m.away.flag,
           kickoff:   m.kickoff,
           modelPick: pick.key,
           probHome:  (probabilities.home ?? 0) / 100,

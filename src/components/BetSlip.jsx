@@ -9,7 +9,11 @@ function LegItem({ leg, onRemove }) {
   return (
     <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 gap-2">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-semibold text-zinc-200">{leg.matchLabel}</p>
+        <p className="truncate text-[11px] font-semibold text-zinc-200">
+          {leg.homeFlag && <span aria-hidden="true">{leg.homeFlag} </span>}
+          {leg.matchLabel}
+          {leg.awayFlag && <span aria-hidden="true"> {leg.awayFlag}</span>}
+        </p>
         <p className="text-[10px] text-zinc-500">
           <span className={OUTCOME_TONE[leg.outcome] ?? 'text-zinc-300'}>{leg.label}</span>
           {' · '}

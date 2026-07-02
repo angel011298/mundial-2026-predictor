@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Info, AlertTriangle, Zap, BookOpen } from 'lucide-react';
+import { Info, AlertTriangle, Zap, BookOpen, Dices, Play, X, Trophy } from 'lucide-react';
 import { useMonteCarloSimulation } from '../hooks/useMonteCarloSimulation.js';
 
 // ─── Opciones de iteraciones ─────────────────────────────────────────────────
@@ -16,7 +16,7 @@ const COLS = [
   { key: 'pQF',       short: '4tos',   title: 'P(llegar a Cuartos de Final)'  },
   { key: 'pSF',       short: 'Semi',   title: 'P(llegar a Semifinal)'          },
   { key: 'pFinal',    short: 'Final',  title: 'P(llegar a la Final)'           },
-  { key: 'pChampion', short: '🏆',     title: 'P(Campeón del Mundo)'           },
+  { key: 'pChampion', short: null,     title: 'P(Campeón del Mundo)'           },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -110,13 +110,15 @@ export default function SimulatorView() {
         <button
           onClick={isRunning ? cancel : () => run(nIter)}
           className={[
-            'w-full rounded-xl py-2.5 text-sm font-bold transition-colors',
+            'flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-bold transition-colors',
             isRunning
               ? 'border border-rose-500/30 bg-rose-500/15 text-rose-300'
               : 'bg-brand-emerald text-zinc-950 hover:bg-brand-emerald-soft',
           ].join(' ')}
         >
-          {isRunning ? '✕  Cancelar' : '▶  Simular'}
+          {isRunning
+            ? <><X size={14} aria-hidden="true" /> Cancelar</>
+            : <><Play size={14} aria-hidden="true" /> Simular</>}
         </button>
 
         {/* Barra de progreso */}
@@ -158,7 +160,7 @@ export default function SimulatorView() {
       {/* ── Estado vacío ──────────────────────────────────────────────────── */}
       {status === 'idle' && !results && (
         <div className="card flex flex-col items-center gap-3 py-12 text-center">
-          <span className="text-4xl" aria-hidden="true">🎲</span>
+          <Dices size={36} className="text-zinc-700" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold text-zinc-300">Listo para simular</p>
             <p className="mt-1 text-xs text-zinc-600">
@@ -205,7 +207,7 @@ export default function SimulatorView() {
                       className="p-2 text-center text-[10px] font-semibold
                                  text-zinc-500 whitespace-nowrap"
                     >
-                      {col.short}
+                      {col.short ?? <Trophy size={11} className="inline" aria-label={col.title} />}
                     </th>
                   ))}
                 </tr>
@@ -263,7 +265,7 @@ export default function SimulatorView() {
 
           <div className="border-t border-zinc-800 px-3 py-2">
             <p className="text-[10px] text-zinc-600">
-              Valores en %. ±SE binomial √(p·(1−p)/N) para P(Campeón). Ordenado por P(🏆) desc.
+              Valores en %. ±SE binomial √(p·(1−p)/N) para P(Campeón). Ordenado por P(Campeón) desc.
             </p>
           </div>
         </div>

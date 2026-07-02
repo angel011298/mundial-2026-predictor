@@ -18,6 +18,9 @@ function cellFg(t) {
 const W = 232, H = 196;
 const ML = 26, MT = 22, CELL_W = 34, CELL_H = 28;
 
+// Path de una estrella de 5 puntas centrada en (0,0) — vectorial propio (sin depender de emoji del SO).
+const STAR_PATH = 'M0,-4 L0.94,-1.29 L3.8,-1.24 L1.52,0.49 L2.35,3.24 L0,1.6 L-2.35,3.24 L-1.52,0.49 L-3.8,-1.24 L-0.94,-1.29 Z';
+
 function sx(col) { return ML + col * CELL_W; }
 function sy(row) { return MT + row * CELL_H; }
 
@@ -106,8 +109,7 @@ export default function GoalMatrix({ home, away }) {
                         stroke={isTop ? '#f59e0b' : '#27272a'}
                         strokeWidth={isTop ? 1.5 : 0.5} />
                   {isTop && (
-                    <text x={x + CELL_W/2} y={y + 9} textAnchor="middle"
-                          fill="#f59e0b" fontSize="7">★</text>
+                    <path d={STAR_PATH} fill="#f59e0b" transform={`translate(${x + CELL_W/2},${y + 6}) scale(0.85)`} />
                   )}
                   {pctTxt && (
                     <text x={x + CELL_W/2} y={y + CELL_H/2 + (isTop ? 5 : 3)}
@@ -121,8 +123,9 @@ export default function GoalMatrix({ home, away }) {
           )}
 
           {/* Footer legend */}
-          <text x={ML} y={H - 3} fill="#52525b" fontSize="7.5">
-            ★ Más probable: {topScore}
+          <path d={STAR_PATH} fill="#f59e0b" transform={`translate(${ML + 3},${H - 6}) scale(0.55)`} />
+          <text x={ML + 9} y={H - 3} fill="#52525b" fontSize="7.5">
+            Más probable: {topScore}
           </text>
           <text x={W - 2} y={H - 3} textAnchor="end" fill="#3f3f46" fontSize="7">
             Poisson bivariado

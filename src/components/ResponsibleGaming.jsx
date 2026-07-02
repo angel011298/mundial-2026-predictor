@@ -191,9 +191,10 @@ export default function ResponsibleGaming() {
               </div>
 
               {/* Aviso */}
-              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+              <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+                <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-400" aria-hidden="true" />
                 <p className="text-[11px] text-amber-200 leading-relaxed">
-                  ⚠️ <strong>No es asesoramiento financiero.</strong> Las predicciones son estimaciones
+                  <strong>No es asesoramiento financiero.</strong> Las predicciones son estimaciones
                   matemáticas con fines educativos. No garantizamos resultados. Nunca apostés más de lo
                   que podés permitirte perder.
                 </p>

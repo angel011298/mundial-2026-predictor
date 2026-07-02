@@ -1,5 +1,5 @@
 import { useState, useId } from 'react';
-import { SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, Zap } from 'lucide-react';
 
 function ev(prob100, odds) {
   return odds > 1 ? (prob100 / 100) * odds * 100 - 100 : -100;
@@ -92,7 +92,9 @@ export default function WhatIfSlider({ analysis, currentOdds, home, away }) {
         </span>
         <div className="flex items-center gap-2">
           {anyPositive && !open && (
-            <span className="text-[10px] font-bold text-emerald-400">⚡ EV+ con estas cuotas</span>
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400">
+              <Zap size={10} aria-hidden="true" /> EV+ con estas cuotas
+            </span>
           )}
           <ChevronDown
             size={13}

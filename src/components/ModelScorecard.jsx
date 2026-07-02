@@ -1,4 +1,4 @@
-import { FlaskConical, Trash2, CheckCircle2, XCircle } from 'lucide-react';
+import { FlaskConical, Trash2, CheckCircle2, XCircle, Zap } from 'lucide-react';
 
 const OUTCOME_LABEL = { home: '1', draw: 'X', away: '2' };
 
@@ -20,13 +20,19 @@ function RecordRow({ r }) {
       correct ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-zinc-800 bg-zinc-900/30'
     }`}>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold text-zinc-300 truncate">
+        <p className="flex items-center gap-1 text-xs font-semibold text-zinc-300 truncate">
+          {r.homeFlag && <span aria-hidden="true">{r.homeFlag}</span>}
           {r.homeTeam} vs {r.awayTeam}
+          {r.awayFlag && <span aria-hidden="true">{r.awayFlag}</span>}
         </p>
         <p className="text-[10px] text-zinc-600">
           Pred: <span className="text-zinc-400 font-bold">{OUTCOME_LABEL[r.modelPick]}</span>
           {' · '}Real: <span className="text-zinc-400 font-bold">{OUTCOME_LABEL[r.actualResult] ?? '?'}</span>
-          {r.wasValueBet && <span className="ml-1 text-emerald-500">⚡ Value</span>}
+          {r.wasValueBet && (
+            <span className="ml-1 inline-flex items-center gap-0.5 text-emerald-500">
+              <Zap size={9} aria-hidden="true" /> Value
+            </span>
+          )}
         </p>
       </div>
       <div className="flex flex-col items-end gap-0.5">
@@ -114,14 +120,26 @@ export default function ModelScorecard({ records, stats, onClear }) {
           {/* Calibración textual */}
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2.5">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-600 mb-1.5">Calibración</p>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              {brierScore !== null && Number(brierScore) < 0.5
-                ? '🟢 Excelente calibración — el modelo está muy bien ajustado.'
-                : brierScore !== null && Number(brierScore) < 0.65
-                ? '🟡 Calibración aceptable — dentro del rango esperado para fútbol.'
-                : brierScore !== null
-                ? '🔴 Calibración mejorable — se necesitan más datos y re-entrenamiento.'
-                : 'Acumulando datos para calcular calibración…'}
+            <p className="flex items-start gap-1.5 text-[11px] text-zinc-400 leading-relaxed">
+              {brierScore !== null && (
+                <span
+                  className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
+                    Number(brierScore) < 0.5 ? 'bg-emerald-500'
+                    : Number(brierScore) < 0.65 ? 'bg-amber-500'
+                    : 'bg-rose-500'
+                  }`}
+                  aria-hidden="true"
+                />
+              )}
+              <span>
+                {brierScore !== null && Number(brierScore) < 0.5
+                  ? 'Excelente calibración — el modelo está muy bien ajustado.'
+                  : brierScore !== null && Number(brierScore) < 0.65
+                  ? 'Calibración aceptable — dentro del rango esperado para fútbol.'
+                  : brierScore !== null
+                  ? 'Calibración mejorable — se necesitan más datos y re-entrenamiento.'
+                  : 'Acumulando datos para calcular calibración…'}
+              </span>
             </p>
           </div>
 

@@ -1,5 +1,5 @@
 import { useMemo, useState, useId } from 'react';
-import { TrendingUp, Target, Wallet, ChevronDown, Clock, Database, Info, Check, BarChart2 } from 'lucide-react';
+import { TrendingUp, Target, Wallet, ChevronDown, Clock, Database, Info, Check, BarChart2, Trophy, Zap } from 'lucide-react';
 import { analyzeMatch } from '../utils/adviceEngine.js';
 import { formatTime, toneClasses, stageLabel, isKnockout } from '../utils/format.js';
 import { useBetSlip } from '../context/BetSlipContext.jsx';
@@ -89,6 +89,8 @@ function OddsSection({ home, away, odds, pickKey, match, analysis }) {
       odds:       col.value,
       homeCode:   home.code,
       awayCode:   away.code,
+      homeFlag:   home.flag,
+      awayFlag:   away.flag,
     });
     toast(`${col.label} añadido al slip`, 'success', 2000);
   };
@@ -146,8 +148,8 @@ function OddsSection({ home, away, odds, pickKey, match, analysis }) {
                   <Check size={8} aria-hidden="true" /> Añadido
                 </div>
               ) : isPick ? (
-                <div className="mt-1 rounded-full bg-emerald-500/20 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300">
-                  ✓ Pick
+                <div className="mt-1 flex items-center justify-center gap-0.5 rounded-full bg-emerald-500/20 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300">
+                  <Check size={8} aria-hidden="true" /> Pick
                 </div>
               ) : null}
             </button>
@@ -190,11 +192,11 @@ export default function MatchCard({ match, onTeamClick, onAnalyze }) {
           <span className={`chip ${knockout
             ? 'border border-amber-500/30 bg-amber-500/15 text-amber-300'
             : 'bg-zinc-800/60 text-zinc-400'}`}>
-            {knockout && <span aria-hidden="true">🏆 </span>}{phaseText}
+            {knockout && <Trophy size={10} aria-hidden="true" />}{phaseText}
           </span>
           {bestValue && (
             <span className="chip border border-emerald-500/30 bg-emerald-500/15 text-[10px] text-emerald-400">
-              ⚡ Value +{bestValue.ev.toFixed(1)}%
+              <Zap size={10} aria-hidden="true" /> Value +{bestValue.ev.toFixed(1)}%
             </span>
           )}
           {dataSource && dataSource !== 'demo' && (
